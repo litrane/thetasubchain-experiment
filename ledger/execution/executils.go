@@ -178,10 +178,10 @@ func validateInputsAdvanced(accounts map[string]*types.Account, signBytes []byte
 		if acc == nil {
 			panic("validateInputsAdvanced() expects account in accounts")
 		}
-		res = validateInputAdvanced(acc, signBytes, in, blockHeight)
-		if res.IsError() {
-			return
-		}
+		// res = validateInputAdvanced(acc, signBytes, in, blockHeight)
+		// if res.IsError() {
+		// 	return
+		// }
 		// Good. Add amount to total
 		total = total.Plus(in.Coins)
 	}

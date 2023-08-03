@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/big"
 	"reflect"
@@ -172,7 +173,11 @@ func (n *Node) Start(ctx context.Context) {
 	n.Mempool.Start(n.ctx)
 	// n.reporter.Start(n.ctx)
 	n.MainchainWitness.Start(n.ctx)
-	n.Orchestrator.Start(n.ctx)
+	if(viper.GetBool(common.CfgOrchestratorEnabled)) {
+		n.Orchestrator.Start(n.ctx)
+		fmt.Println("orchestrator started")
+	}
+	//n.Orchestrator.Start(n.ctx)
 
 	if viper.GetBool(common.CfgRPCEnabled) {
 		n.RPC.Start(n.ctx)

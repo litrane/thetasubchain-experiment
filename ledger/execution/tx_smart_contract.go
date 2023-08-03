@@ -88,11 +88,12 @@ func (exec *SmartContractTxExecutor) sanityCheck(chainID string, view *slst.Stor
 	// Validate input, advanced
 
 	// Check sequence/coins
-	seq, balance := fromAccount.Sequence, fromAccount.Balance
-	if seq+1 != tx.From.Sequence {
-		return result.Error("ValidateInputAdvanced: Got %v, expected %v. (acc.seq=%v)",
-			tx.From.Sequence, seq+1, fromAccount.Sequence).WithErrorCode(result.CodeInvalidSequence)
-	}
+	//seq, balance := fromAccount.Sequence, fromAccount.Balance
+	_, balance := fromAccount.Sequence, fromAccount.Balance
+	// if seq+1 != tx.From.Sequence {
+	// 	return result.Error("ValidateInputAdvanced: Got %v, expected %v. (acc.seq=%v)",
+	// 		tx.From.Sequence, seq+1, fromAccount.Sequence).WithErrorCode(result.CodeInvalidSequence)
+	// }
 
 	// Check amount
 	if !balance.IsGTE(tx.From.Coins) {

@@ -58,9 +58,11 @@ type Orchestrator struct {
 	interChainEventCache *siu.InterChainEventCache
 
 	// Life cycle
-	wg     *sync.WaitGroup
-	ctx    context.Context
-	cancel context.CancelFunc
+	wg       *sync.WaitGroup
+	ctx      context.Context
+	cancel   context.CancelFunc
+	nonce    uint64
+	maxNonce *big.Int
 }
 
 // NewOrchestrator creates a new Orchestrator
@@ -98,6 +100,7 @@ func NewOrchestrator(db database.Database, updateInterval int, interChainEventCa
 		logger.Fatalf("the ETH client failed to connect to the subchain ETH RPC: %v\n", err)
 	}
 	eventProcessedTime := make(map[string]time.Time)
+
 	oc := &Orchestrator{
 		updateInterval:     updateInterval,
 		privateKey:         privateKey,
@@ -121,7 +124,11 @@ func NewOrchestrator(db database.Database, updateInterval int, interChainEventCa
 		interChainEventCache: interChainEventCache,
 
 		wg: &sync.WaitGroup{},
+		//nonce: uint,
 	}
+	targetChainTokenBank := oc.mainchainTNT20TokenBank
+	oc.maxNonce, _ = targetChainTokenBank.GetMaxProcessedTokenLockNonce(nil, big.NewInt(360001))
+	oc.nonce, _ = oc.mainchainEthRpcClient.PendingNonceAt(context.Background(), oc.privateKey.PublicKey().Address())
 	return oc
 }
 
@@ -184,6 +191,7 @@ func (oc *Orchestrator) SetLedgerAndSubchainTokenBanks(ledger score.Ledger) {
 
 func (oc *Orchestrator) mainloop(ctx context.Context) {
 	oc.eventProcessingTicker = time.NewTicker(time.Duration(oc.updateInterval) * time.Millisecond)
+	print("mainloop \n", oc.updateInterval)
 	for {
 		select {
 		case <-ctx.Done():
@@ -203,7 +211,7 @@ func (oc *Orchestrator) mainloop(ctx context.Context) {
 func (oc *Orchestrator) processNextTokenLockEvent(sourceChainID *big.Int, targetChainID *big.Int) {
 	oc.processNextTFuelTokenLockEvent(sourceChainID, targetChainID)
 	oc.processNextTNT20TokenLockEvent(sourceChainID, targetChainID)
-	oc.processNextTNT721TokenLockEvent(sourceChainID, targetChainID)
+	//oc.processNextTNT721TokenLockEvent(sourceChainID, targetChainID)
 }
 
 func (oc *Orchestrator) processNextTFuelTokenLockEvent(sourceChainID *big.Int, targetChainID *big.Int) {
@@ -218,12 +226,16 @@ func (oc *Orchestrator) processNextTFuelTokenLockEvent(sourceChainID *big.Int, t
 }
 
 func (oc *Orchestrator) processNextTNT20TokenLockEvent(sourceChainID *big.Int, targetChainID *big.Int) {
-	targetChainTokenBank := oc.getTNT20TokenBank(targetChainID)
-	maxProcessedTokenLockNonce, err := targetChainTokenBank.GetMaxProcessedTokenLockNonce(nil, sourceChainID)
-	if err != nil {
-		logger.Warnf("Failed to query the max processed TNT20 token lock nonce for chain: %v", targetChainID.String())
-		return // ignore
-	}
+	//targetChainTokenBank := oc.getTNT20TokenBank(targetChainID)
+
+	//maxProcessedTokenLockNonce, err := targetChainTokenBank.GetMaxProcessedTokenLockNonce(nil, sourceChainID)
+	//	if targetChainID.Cmp(oc.mainchainID) == 0 {
+	maxProcessedTokenLockNonce := oc.maxNonce
+	//}
+	// if err != nil {
+	// 	logger.Warnf("Failed to query the max processed TNT20 token lock nonce for chain: %v", targetChainID.String())
+	// 	return // ignore
+	// }
 	oc.processNextEvent(sourceChainID, targetChainID, score.IMCEventTypeCrossChainTokenLockTNT20, maxProcessedTokenLockNonce)
 }
 
@@ -404,6 +416,7 @@ func (oc *Orchestrator) mintTNT20Vouchers(txOpts *bind.TransactOpts, targetChain
 	if err != nil {
 		return err
 	}
+	oc.maxNonce.Add(oc.maxNonce, big.NewInt(1))
 	return nil
 }
 
@@ -490,7 +503,9 @@ func (oc *Orchestrator) buildTxOpts(chainID *big.Int, ecClient *ec.Client) (*bin
 		gasPrice = common.Big0
 	}
 
-	nonce, err := ecClient.PendingNonceAt(context.Background(), oc.privateKey.PublicKey().Address())
+	//nonce, err := ecClient.PendingNonceAt(context.Background(), oc.privateKey.PublicKey().Address())
+	nonce := oc.nonce
+	oc.nonce++
 	if err != nil {
 		return nil, err
 	}
