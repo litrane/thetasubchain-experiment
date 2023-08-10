@@ -7,11 +7,9 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
-
 	"github.com/thetatoken/theta/common"
 	ts "github.com/thetatoken/theta/store"
 	"github.com/thetatoken/theta/store/database"
-	"github.com/thetatoken/theta/store/kvstore"
 	score "github.com/thetatoken/thetasubchain/core"
 )
 
@@ -33,14 +31,14 @@ func InterChainEventIndexKey(sourceChainID *big.Int, icmeType score.InterChainMe
 
 type InterChainEventCache struct {
 	mutex *sync.Mutex // mutex to for concurrency protection, e.g., the witness thread and consensus thread may access it concurrently
-	db    database.Database
+	db    map[string]*score.InterChainMessageEvent
 }
 
 // NewInterChainEventCache creates a new crosschain transfer event cache instance.
 func NewInterChainEventCache(db database.Database) *InterChainEventCache {
 	cache := &InterChainEventCache{
 		mutex: &sync.Mutex{},
-		db:    db,
+		db:    make(map[string]*score.InterChainMessageEvent),
 	}
 	return cache
 }
@@ -48,59 +46,79 @@ func NewInterChainEventCache(db database.Database) *InterChainEventCache {
 func (c *InterChainEventCache) Insert(event *score.InterChainMessageEvent) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
-	store := kvstore.NewKVStore(c.db)
-	err := store.Put(InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce), event)
-	return err // the caller should handle the error
+	c.db[InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce).String()] = event
+	// store := kvstore.NewKVStore(c.db)
+	// err := store.Put(InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce), event)
+	return nil // the caller should handle the error
 }
 
 func (c *InterChainEventCache) InsertList(events []*score.InterChainMessageEvent) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
-	store := kvstore.NewKVStore(c.db)
 	for _, event := range events {
-		err := store.Put(InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce), event)
-		if err != nil {
-			return err // the caller should handle the error
-		}
+		//fmt.Println("InsertList: ", event.Nonce)
+		c.db[InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce).String()] = event
 	}
+	// store := kvstore.NewKVStore(c.db)
+	// for _, event := range events {
+	// 	err := store.Put(InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce), event)
+	// 	if err != nil {
+	// 		return err // the caller should handle the error
+	// 	}
+	// }
 	return nil
 }
 
 func (c *InterChainEventCache) Delete(sourceChainID *big.Int, imceType score.InterChainMessageEventType, nonce *big.Int) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
-	store := kvstore.NewKVStore(c.db)
-	err := store.Delete(InterChainEventIndexKey(sourceChainID, imceType, nonce))
-	return err // the caller should handle the error
+	delete(c.db, InterChainEventIndexKey(sourceChainID, imceType, nonce).String())
+	// store := kvstore.NewKVStore(c.db)
+	//err := store.Delete(InterChainEventIndexKey(sourceChainID, imceType, nonce))
+	return nil // the caller should handle the error
 }
 
 func (c *InterChainEventCache) Get(sourceChainID *big.Int, imceType score.InterChainMessageEventType, nonce *big.Int) (*score.InterChainMessageEvent, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	event := score.InterChainMessageEvent{}
-	store := kvstore.NewKVStore(c.db)
-	err := store.Get(InterChainEventIndexKey(sourceChainID, imceType, nonce), &event)
-	return &event, err // the caller should handle the error
+	//event := score.InterChainMessageEvent{}
+	event, ok := c.db[InterChainEventIndexKey(sourceChainID, imceType, nonce).String()]
+	//event, ok := *c.db[InterChainEventIndexKey(sourceChainID, imceType, nonce).String()]
+	//fmt.Println("Search InterChainEventCache: ", nonce)
+	if ok {
+		//	fmt.Println("Get InterChainEventCache: ", event.Nonce)
+		event1 := score.InterChainMessageEvent{}
+		event1 = *event
+		return &event1, nil
+	} else {
+		return nil, ts.ErrKeyNotFound
+	}
+	// store := kvstore.NewKVStore(c.db)
+	// err := store.Get(InterChainEventIndexKey(sourceChainID, imceType, nonce), &event)
+	//return &event1, nil // the caller should handle the error
 }
 
 func (c *InterChainEventCache) Exists(sourceChainID *big.Int, imceType score.InterChainMessageEventType, nonce *big.Int) (bool, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	event := score.InterChainMessageEvent{}
-	store := kvstore.NewKVStore(c.db)
-	err := store.Get(InterChainEventIndexKey(sourceChainID, imceType, nonce), &event)
-	if err == nil {
+	//event := score.InterChainMessageEvent{}
+	//store := kvstore.NewKVStore(c.db)
+	//err := store.Get(InterChainEventIndexKey(sourceChainID, imceType, nonce), &event)
+	_, ok := c.db[InterChainEventIndexKey(sourceChainID, imceType, nonce).String()]
+	if ok {
 		return true, nil
-	}
-
-	if err == ts.ErrKeyNotFound {
+	} else {
 		return false, nil
 	}
+	// if err == nil {
+	// 	return true, nil
+	// }
 
-	return false, err // the caller should handle the error
+	// if err == ts.ErrKeyNotFound {
+	// 	return false, nil
+	// }
+
+	//return false, err // the caller should handle the error
 }

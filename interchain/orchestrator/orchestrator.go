@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -229,7 +228,7 @@ func (oc *Orchestrator) mainloop(ctx context.Context) {
 		case <-oc.eventProcessingTicker.C:
 			// Handle token lock events
 			//oc.processNextTokenLockEvent(oc.mainchainID, oc.subchainID) // send token from the mainchain to the subchain
-			fmt.Println("processNextTokenLockEvent time is", time.Now().Unix(), "s")
+			//fmt.Println("processNextTokenLockEvent time is", time.Now().Unix(), "s")
 			oc.processNextTokenLockEvent(oc.subchainID, oc.mainchainID) // send token from the subchain to the mainchain
 
 			// Handle voucher burn events
@@ -269,13 +268,13 @@ func (oc *Orchestrator) processNextTNT20TokenLockEvent(sourceChainID *big.Int, t
 	// 	logger.Warnf("Failed to query the max processed TNT20 token lock nonce for chain: %v", targetChainID.String())
 	// 	return // ignore
 	// }
-	startTime := time.Now()
+	//startTime := time.Now()
 
 	oc.processNextEvent(sourceChainID, targetChainID, score.IMCEventTypeCrossChainTokenLockTNT20, maxProcessedTokenLockNonce)
 
 	// 计算并打印函数运行的耗时
-	elapsedTime := time.Since(startTime)
-	fmt.Printf("Function took %v to run.\n", elapsedTime)
+	//elapsedTime := time.Since(startTime)
+	//fmt.Printf("Function took %v to run.\n", elapsedTime)
 
 }
 
@@ -329,13 +328,14 @@ func (oc *Orchestrator) processNextTNT721VoucherBurnEvent(sourceChainID *big.Int
 }
 
 func (oc *Orchestrator) processNextEvent(sourceChainID *big.Int, targetChainID *big.Int, sourceChainEventType score.InterChainMessageEventType, maxProcessedNonce *big.Int) {
-	start := time.Now()
+	//start := time.Now()
 	//oc.cleanUpInterChainEventCache(sourceChainID, sourceChainEventType, maxProcessedNonce)
 
 	nextNonce := big.NewInt(0).Add(maxProcessedNonce, big.NewInt(1))
 	sourceEvent, err := oc.interChainEventCache.Get(sourceChainID, sourceChainEventType, nextNonce)
-	
+
 	if err == ts.ErrKeyNotFound {
+		//fmt.Println("ErrKeyNotFound")
 		return // the next event (e.g. Token Lock, or Voucher Burn) has not occurred yet
 	}
 
@@ -343,9 +343,9 @@ func (oc *Orchestrator) processNextEvent(sourceChainID *big.Int, targetChainID *
 	// 	sourceChainID, targetChainID, sourceChainEventType, nextNonce)
 
 	targetEventType := oc.getTargetChainCorrespondingEventType(sourceChainEventType)
-	elapsedTime := time.Since(start)
-	fmt.Printf("Function1 took %v to run.\n", elapsedTime)
-	start = time.Now()
+	//elapsedTime := time.Since(start)
+	//fmt.Printf("Function1 took %v to run.\n", elapsedTime)
+	//start = time.Now()
 	//retryThreshold := oc.getRetryThreshold(targetChainID)
 	//if oc.timeElapsedSinceEventProcessed(sourceEvent) > retryThreshold { // retry if the tx has been submitted for a long time
 	//err := oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
@@ -354,8 +354,8 @@ func (oc *Orchestrator) processNextEvent(sourceChainID *big.Int, targetChainID *
 	oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
 	//oc.mutex.Unlock()
 	//oc.mutex.Unlock()
-	elapsedTime = time.Since(start)
-	fmt.Printf("Function2 took %v to run.\n", elapsedTime)
+	//elapsedTime = time.Since(start)
+	//fmt.Printf("Function2 took %v to run.\n", elapsedTime)
 	// 	if err == nil {
 	// 		oc.updateEventProcessedTime(sourceEvent)
 	// 	} else {
@@ -392,20 +392,26 @@ func (oc *Orchestrator) updateEventProcessedTime(event *score.InterChainMessageE
 // For Voucher Burn events on the source chain, call the Unlock Token method  of the corresponding TokenBank contract on the target chain
 func (oc *Orchestrator) callTargetContract(targetChainID *big.Int, targetEventType score.InterChainMessageEventType, sourceEvent *score.InterChainMessageEvent) error {
 	var err error
+	//start := time.Now()
+	//dynasty := oc.getDynasty()
+	//elapsedTime := time.Since(start)
+	//fmt.Printf("getDynasty took %v to run.\n", elapsedTime)
+	//fmt.Println("dynasty", dynasty)
+	//start = time.Now()
+	// if dynasty != nil {
+	// 	logger.Infof("calling contracts on target chain %v for event type %v, current dynasty: %v", targetChainID, targetEventType, dynasty)
 
-	dynasty := oc.getDynasty()
-	if dynasty != nil {
-		logger.Infof("calling contracts on target chain %v for event type %v, current dynasty: %v", targetChainID, targetEventType, dynasty)
-
-		vsQueriedFromMC, _ := oc.mainchainTFuelTokenBank.GetAdjustedValidatorSet(nil, oc.subchainID, dynasty)
-		vsQueriedFromSC, _ := oc.subchainTNT20TokenBank.GetAdjustedValidatorSet(nil, oc.subchainID, dynasty)
-		logger.Debugf("Subchain %v adjusted ValSet queried from the Mainchain for dynasty %v: %v", oc.subchainID, dynasty, vsQueriedFromMC)
-		logger.Debugf("Subchain %v adjusted ValSet queried from the Subchain  for dynasty %v: %v", oc.subchainID, dynasty, vsQueriedFromSC)
-	}
+	// 	vsQueriedFromMC, _ := oc.mainchainTFuelTokenBank.GetAdjustedValidatorSet(nil, oc.subchainID, dynasty)
+	// 	vsQueriedFromSC, _ := oc.subchainTNT20TokenBank.GetAdjustedValidatorSet(nil, oc.subchainID, dynasty)
+	// 	logger.Debugf("Subchain %v adjusted ValSet queried from the Mainchain for dynasty %v: %v", oc.subchainID, dynasty, vsQueriedFromMC)
+	// 	logger.Debugf("Subchain %v adjusted ValSet queried from the Subchain  for dynasty %v: %v", oc.subchainID, dynasty, vsQueriedFromSC)
+	// }
 
 	targetChainEthRpcClient := oc.getEthRpcClient(targetChainID)
 
 	txOpts, err := oc.buildTxOpts(targetChainID, targetChainEthRpcClient)
+	//elapsedTime = time.Since(start)
+	//fmt.Printf("buildTxOpts took %v to run.\n", elapsedTime)
 	if err != nil {
 		return err
 	}
@@ -414,7 +420,7 @@ func (oc *Orchestrator) callTargetContract(targetChainID *big.Int, targetEventTy
 	case score.IMCEventTypeCrossChainVoucherMintTFuel:
 		err = oc.mintTFuelVouchers(txOpts, targetChainID, sourceEvent)
 	case score.IMCEventTypeCrossChainVoucherMintTNT20:
-		fmt.Println("IMCEventTypeCrossChainVoucherMintTNT20 time is", time.Now().Unix(), "s")
+		//fmt.Println("IMCEventTypeCrossChainVoucherMintTNT20 time is", time.Now().Unix(), "s")
 
 		//oc.lockMap[oc.maxNonce.String()] = InterChainEvent{txOpts: txOpts, targetChainID: targetChainID, sourceEvent: sourceEvent}
 
@@ -554,25 +560,30 @@ func (oc *Orchestrator) unlockTNT721Tokens(txOpts *bind.TransactOpts, targetChai
 func (oc *Orchestrator) buildTxOpts(chainID *big.Int, ecClient *ec.Client) (*bind.TransactOpts, error) {
 	var gasPrice *big.Int
 	var err error
-	if chainID.Cmp(oc.mainchainID) == 0 {
-		gasPrice, err = ecClient.SuggestGasPrice(context.Background())
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		// eth_gasPrice returns a hardcoded nubmer for the mainchain, which could be much higher than min gasPrice required by the subchain
-		// TODO: parameterize the subchain ETH RPC service to suggest the proper gasPrice for different chains
-		// gasPrice = big.NewInt(int64(scom.MinimumGasPrice) * 2)
-		gasPrice = common.Big0
-	}
-
+	// if chainID.Cmp(oc.mainchainID) == 0 {
+	// 	gasPrice, err = ecClient.SuggestGasPrice(context.Background())
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// } else {
+	// 	// eth_gasPrice returns a hardcoded nubmer for the mainchain, which could be much higher than min gasPrice required by the subchain
+	// 	// TODO: parameterize the subchain ETH RPC service to suggest the proper gasPrice for different chains
+	// 	// gasPrice = big.NewInt(int64(scom.MinimumGasPrice) * 2)
+	// 	gasPrice = common.Big0
+	// }
+	gasPrice = big.NewInt(4000000000000)
+	println("gasPrice", gasPrice.Int64())
 	//nonce, err := ecClient.PendingNonceAt(context.Background(), oc.privateKey.PublicKey().Address())
 	nonce := oc.nonce
 	oc.nonce++
 	if err != nil {
 		return nil, err
 	}
+	//startTime := time.Now()
 	txOpts, err := bind.NewKeyedTransactorWithChainID(oc.privateKey, chainID) //chainID)
+	//elasptime := time.Since(startTime)
+	//fmt.Println("NewKeyedTransactorWithChainID", elasptime)
+
 	if err != nil {
 		return nil, err
 	}
@@ -580,7 +591,7 @@ func (oc *Orchestrator) buildTxOpts(chainID *big.Int, ecClient *ec.Client) (*bin
 	txOpts.Value = big.NewInt(0)       // in wei
 	txOpts.GasLimit = uint64(10000000) // in units
 	txOpts.GasPrice = gasPrice
-	logger.Debugf("building tx opts with address %v", oc.privateKey.PublicKey().Address())
+	//logger.Debugf("building tx opts with address %v", oc.privateKey.PublicKey().Address())
 	return txOpts, nil
 }
 
