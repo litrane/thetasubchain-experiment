@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -25,6 +26,11 @@ import (
 
 var logger *log.Entry = log.WithFields(log.Fields{"prefix": "orchestrator"})
 
+type InterChainEvent struct {
+	txOpts        *bind.TransactOpts
+	targetChainID *big.Int
+	sourceEvent   *score.InterChainMessageEvent
+}
 type Orchestrator struct {
 	updateInterval        int
 	privateKey            *crypto.PrivateKey
@@ -63,6 +69,9 @@ type Orchestrator struct {
 	cancel   context.CancelFunc
 	nonce    uint64
 	maxNonce *big.Int
+	lockMap  map[string]InterChainEvent
+	mutex    *sync.Mutex
+	channel  chan int
 }
 
 // NewOrchestrator creates a new Orchestrator
@@ -123,8 +132,11 @@ func NewOrchestrator(db database.Database, updateInterval int, interChainEventCa
 
 		interChainEventCache: interChainEventCache,
 
-		wg: &sync.WaitGroup{},
+		wg:      &sync.WaitGroup{},
+		lockMap: make(map[string]InterChainEvent),
 		//nonce: uint,
+		mutex:   &sync.Mutex{},
+		channel: make(chan int),
 	}
 	targetChainTokenBank := oc.mainchainTNT20TokenBank
 	oc.maxNonce, _ = targetChainTokenBank.GetMaxProcessedTokenLockNonce(nil, big.NewInt(360001))
@@ -138,7 +150,25 @@ func (oc *Orchestrator) Start(ctx context.Context) {
 	oc.cancel = cancel
 
 	oc.wg.Add(1)
+	//nonce := big.NewInt(oc.maxNonce.Int64())
+	// go func() {
+	// 	fmt.Println("init maxNonce exec", nonce)
+	// 	//alreadyminted := big.NewInt(-1)
+	// 	for {
+	// 		oc.mutex.Lock()
+	// 		value, ok := oc.lockMap[nonce.String()]
+	// 		oc.mutex.Unlock()
+	// 		if ok {
+	// 			fmt.Println("maxNonce exec", nonce)
+	// 			go oc.mintTNT20Vouchers(value.txOpts, value.targetChainID, value.sourceEvent)
+	// 			//alreadyminted=nonce
+	// 			nonce = nonce.Add(nonce, big.NewInt(1))
+	// 		}
+
+	// 	}
+	// }()
 	go oc.mainloop(ctx)
+
 	logger.Info("Metachain orchestrator started")
 }
 
@@ -198,18 +228,19 @@ func (oc *Orchestrator) mainloop(ctx context.Context) {
 			return
 		case <-oc.eventProcessingTicker.C:
 			// Handle token lock events
-			oc.processNextTokenLockEvent(oc.mainchainID, oc.subchainID) // send token from the mainchain to the subchain
+			//oc.processNextTokenLockEvent(oc.mainchainID, oc.subchainID) // send token from the mainchain to the subchain
+			fmt.Println("processNextTokenLockEvent time is", time.Now().Unix(), "s")
 			oc.processNextTokenLockEvent(oc.subchainID, oc.mainchainID) // send token from the subchain to the mainchain
 
 			// Handle voucher burn events
-			oc.processNextVoucherBurnEvent(oc.mainchainID, oc.subchainID) // burn voucher to send token from the mainchain back to the subchain
-			oc.processNextVoucherBurnEvent(oc.subchainID, oc.mainchainID) // burn voucher to send token from the subchain back to the mainchain
+			//oc.processNextVoucherBurnEvent(oc.mainchainID, oc.subchainID) // burn voucher to send token from the mainchain back to the subchain
+			//oc.processNextVoucherBurnEvent(oc.subchainID, oc.mainchainID) // burn voucher to send token from the subchain back to the mainchain
 		}
 	}
 }
 
 func (oc *Orchestrator) processNextTokenLockEvent(sourceChainID *big.Int, targetChainID *big.Int) {
-	oc.processNextTFuelTokenLockEvent(sourceChainID, targetChainID)
+	//oc.processNextTFuelTokenLockEvent(sourceChainID, targetChainID)
 	oc.processNextTNT20TokenLockEvent(sourceChainID, targetChainID)
 	//oc.processNextTNT721TokenLockEvent(sourceChainID, targetChainID)
 }
@@ -230,13 +261,22 @@ func (oc *Orchestrator) processNextTNT20TokenLockEvent(sourceChainID *big.Int, t
 
 	//maxProcessedTokenLockNonce, err := targetChainTokenBank.GetMaxProcessedTokenLockNonce(nil, sourceChainID)
 	//	if targetChainID.Cmp(oc.mainchainID) == 0 {
+	//oc.mutex.Lock()
 	maxProcessedTokenLockNonce := oc.maxNonce
+	//oc.mutex.Unlock()
 	//}
 	// if err != nil {
 	// 	logger.Warnf("Failed to query the max processed TNT20 token lock nonce for chain: %v", targetChainID.String())
 	// 	return // ignore
 	// }
+	startTime := time.Now()
+
 	oc.processNextEvent(sourceChainID, targetChainID, score.IMCEventTypeCrossChainTokenLockTNT20, maxProcessedTokenLockNonce)
+
+	// 计算并打印函数运行的耗时
+	elapsedTime := time.Since(startTime)
+	fmt.Printf("Function took %v to run.\n", elapsedTime)
+
 }
 
 func (oc *Orchestrator) processNextTNT721TokenLockEvent(sourceChainID *big.Int, targetChainID *big.Int) {
@@ -250,9 +290,9 @@ func (oc *Orchestrator) processNextTNT721TokenLockEvent(sourceChainID *big.Int, 
 }
 
 func (oc *Orchestrator) processNextVoucherBurnEvent(sourceChainID *big.Int, targetChainID *big.Int) {
-	oc.processNextTFuelVoucherBurnEvent(sourceChainID, targetChainID)
+	//oc.processNextTFuelVoucherBurnEvent(sourceChainID, targetChainID)
 	oc.processNextTNT20VoucherBurnEvent(sourceChainID, targetChainID)
-	oc.processNextTNT721VoucherBurnEvent(sourceChainID, targetChainID)
+	//oc.processNextTNT721VoucherBurnEvent(sourceChainID, targetChainID)
 }
 
 func (oc *Orchestrator) processNextTFuelVoucherBurnEvent(sourceChainID *big.Int, targetChainID *big.Int) {
@@ -289,27 +329,39 @@ func (oc *Orchestrator) processNextTNT721VoucherBurnEvent(sourceChainID *big.Int
 }
 
 func (oc *Orchestrator) processNextEvent(sourceChainID *big.Int, targetChainID *big.Int, sourceChainEventType score.InterChainMessageEventType, maxProcessedNonce *big.Int) {
-	oc.cleanUpInterChainEventCache(sourceChainID, sourceChainEventType, maxProcessedNonce)
+	start := time.Now()
+	//oc.cleanUpInterChainEventCache(sourceChainID, sourceChainEventType, maxProcessedNonce)
 
 	nextNonce := big.NewInt(0).Add(maxProcessedNonce, big.NewInt(1))
 	sourceEvent, err := oc.interChainEventCache.Get(sourceChainID, sourceChainEventType, nextNonce)
+	
 	if err == ts.ErrKeyNotFound {
 		return // the next event (e.g. Token Lock, or Voucher Burn) has not occurred yet
 	}
 
-	logger.Debugf("Process next event, sourceChainID: %v, targetChainID: %v, sourceChainEventType: %v, nextNonce: %v",
-		sourceChainID, targetChainID, sourceChainEventType, nextNonce)
+	// logger.Debugf("Process next event, sourceChainID: %v, targetChainID: %v, sourceChainEventType: %v, nextNonce: %v",
+	// 	sourceChainID, targetChainID, sourceChainEventType, nextNonce)
 
 	targetEventType := oc.getTargetChainCorrespondingEventType(sourceChainEventType)
-	retryThreshold := oc.getRetryThreshold(targetChainID)
-	if oc.timeElapsedSinceEventProcessed(sourceEvent) > retryThreshold { // retry if the tx has been submitted for a long time
-		err := oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
-		if err == nil {
-			oc.updateEventProcessedTime(sourceEvent)
-		} else {
-			logger.Warnf("Failed to call target contract: %v", err)
-		}
-	}
+	elapsedTime := time.Since(start)
+	fmt.Printf("Function1 took %v to run.\n", elapsedTime)
+	start = time.Now()
+	//retryThreshold := oc.getRetryThreshold(targetChainID)
+	//if oc.timeElapsedSinceEventProcessed(sourceEvent) > retryThreshold { // retry if the tx has been submitted for a long time
+	//err := oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
+	//oc.mutex.Lock()
+	//oc.mutex.Lock()
+	oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
+	//oc.mutex.Unlock()
+	//oc.mutex.Unlock()
+	elapsedTime = time.Since(start)
+	fmt.Printf("Function2 took %v to run.\n", elapsedTime)
+	// 	if err == nil {
+	// 		oc.updateEventProcessedTime(sourceEvent)
+	// 	} else {
+	// 		logger.Warnf("Failed to call target contract: %v", err)
+	// 	}
+	// }
 }
 
 func (oc *Orchestrator) cleanUpInterChainEventCache(sourceChainID *big.Int, eventType score.InterChainMessageEventType, maxProcessedNonce *big.Int) {
@@ -352,6 +404,7 @@ func (oc *Orchestrator) callTargetContract(targetChainID *big.Int, targetEventTy
 	}
 
 	targetChainEthRpcClient := oc.getEthRpcClient(targetChainID)
+
 	txOpts, err := oc.buildTxOpts(targetChainID, targetChainEthRpcClient)
 	if err != nil {
 		return err
@@ -361,8 +414,18 @@ func (oc *Orchestrator) callTargetContract(targetChainID *big.Int, targetEventTy
 	case score.IMCEventTypeCrossChainVoucherMintTFuel:
 		err = oc.mintTFuelVouchers(txOpts, targetChainID, sourceEvent)
 	case score.IMCEventTypeCrossChainVoucherMintTNT20:
-		err = oc.mintTNT20Vouchers(txOpts, targetChainID, sourceEvent)
+		fmt.Println("IMCEventTypeCrossChainVoucherMintTNT20 time is", time.Now().Unix(), "s")
+
+		//oc.lockMap[oc.maxNonce.String()] = InterChainEvent{txOpts: txOpts, targetChainID: targetChainID, sourceEvent: sourceEvent}
+
+		//fmt.Println("oc.lockMap[oc.maxNonce.String()] is", oc.maxNonce.String())
+		//fmt.Println("tx nonce is ", txOpts.Nonce)
+		oc.maxNonce.Add(oc.maxNonce, big.NewInt(1))
+		//fmt.Println("new nonce is", oc.maxNonce.String())
+		//oc.channel <- 1
+		go oc.mintTNT20Vouchers(txOpts, targetChainID, sourceEvent)
 	case score.IMCEventTypeCrossChainVoucherMintTNT721:
+
 		err = oc.mintTN721Vouchers(txOpts, targetChainID, sourceEvent)
 
 	// Token Unlock events
@@ -416,7 +479,7 @@ func (oc *Orchestrator) mintTNT20Vouchers(txOpts *bind.TransactOpts, targetChain
 	if err != nil {
 		return err
 	}
-	oc.maxNonce.Add(oc.maxNonce, big.NewInt(1))
+
 	return nil
 }
 
