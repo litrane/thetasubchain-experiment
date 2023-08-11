@@ -34,9 +34,7 @@ var logger *log.Entry = log.WithFields(log.Fields{"prefix": "ledger"})
 
 var _ score.Ledger = (*Ledger)(nil)
 
-//
 // Ledger implements the score.Ledger interface
-//
 type Ledger struct {
 	db           database.Database
 	chain        *sbc.Chain
@@ -261,7 +259,7 @@ func (ledger *Ledger) ProposeBlockTxs(block *score.Block, validatorMajorityInThe
 
 	// Add special transactions
 	rawTxCandidates := []common.Bytes{}
-	ledger.addSpecialTransactions(block, view, &rawTxCandidates, validatorMajorityInTheSameDynasty)
+	// ledger.addSpecialTransactions(block, view, &rawTxCandidates, validatorMajorityInTheSameDynasty)
 
 	// Add regular transactions submitted by the clients
 	regularRawTxs := ledger.mempool.ReapUnsafe(score.MaxNumRegularTxsPerBlock)
@@ -298,7 +296,8 @@ func (ledger *Ledger) ProposeBlockTxs(block *score.Block, validatorMajorityInThe
 	logger.Debugf("ProposeBlockTxs: delay update handled, block.height = %v", block.Height)
 	handleDelayedUpdateTime := time.Since(start)
 
-	logger.Debugf("ProposeBlockTxs: Done, block.height = %v, preparationTime = %v, addTxsTime = %v, execTxsTime = %v, handleDelayedUpdateTime = %v",
+	// annoying
+	logger.Infof("ProposeBlockTxs: Done, block.height = %v, preparationTime = %v, addTxsTime = %v, execTxsTime = %v, handleDelayedUpdateTime = %v",
 		block.Height, preparationTime, addTxsTime, execTxsTime, handleDelayedUpdateTime)
 
 	return stateRootHash, blockRawTxs, result.OK
@@ -385,7 +384,8 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 
 	logger.Debugf("ApplyBlockTxs: Cleared mempool transactions, block.height = %v", block.Height)
 
-	logger.Debugf("ApplyBlockTxs: Done, block.height = %v, txProcessTime = %v, handleDelayedUpdateTime = %v, commitTime = %v",
+	// Annoying
+	logger.Infof("123456ApplyBlockTxs: Done, block.height = %v, txProcessTime = %v, handleDelayedUpdateTime = %v, commitTime = %v",
 		block.Height, txProcessTime, handleDelayedUpdateTime, commitTime)
 
 	return result.OKWith(result.Info{"hasValidatorUpdate": hasValidatorUpdate})
@@ -566,7 +566,7 @@ func (ledger *Ledger) pruneStateForRange(startHeight, endHeight uint64) error {
 }
 
 // ResetState sets the ledger state with the designated root
-//func (ledger *Ledger) ResetState(height uint64, rootHash common.Hash) result.Result {
+// func (ledger *Ledger) ResetState(height uint64, rootHash common.Hash) result.Result {
 func (ledger *Ledger) ResetState(block *score.Block) result.Result {
 	ledger.mu.Lock()
 	defer ledger.mu.Unlock()
@@ -588,7 +588,7 @@ func (ledger *Ledger) FinalizeState(height uint64, rootHash common.Hash) result.
 }
 
 // resetState sets the ledger state with the designated root
-//func (ledger *Ledger) resetState(height uint64, rootHash common.Hash) result.Result
+// func (ledger *Ledger) resetState(height uint64, rootHash common.Hash) result.Result
 func (ledger *Ledger) resetState(block *score.Block) result.Result {
 	height := block.Height
 	rootHash := block.StateHash
