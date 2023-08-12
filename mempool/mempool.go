@@ -33,9 +33,7 @@ const FastsyncSkipTxError = MempoolError("Skip tx during fastsync")
 
 const MaxMempoolTxCount int = 25600
 
-//
 // mempoolTransaction implements the pqueue.Element interface
-//
 type mempoolTransaction struct {
 	index          int
 	rawTransaction common.Bytes
@@ -64,10 +62,8 @@ func createMempoolTransaction(rawTransaction common.Bytes, txInfo *score.TxInfo)
 	}
 }
 
-//
 // mempoolTransactionGroup holds a sequenece of transactions from one account. We sort transaction groups by the priority of
 // their lowest sequence transaction.
-//
 type mempoolTransactionGroup struct {
 	address common.Address
 	txs     *pqueue.PriorityQueue
@@ -133,10 +129,8 @@ func createMempoolTransactionGroup(rawTx common.Bytes, txInfo *score.TxInfo) *me
 	return txGroup
 }
 
-//
 // Mempool manages the transactions submitted by the clients
 // or relayed from peers
-//
 type Mempool struct {
 	mutex *sync.Mutex
 
@@ -221,9 +215,9 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 		}
 		mp.candidateTxs.Push(txGroup)
 		logger.Debugf("rawTx: %v, txInfo: %v", hex.EncodeToString(rawTx), txInfo)
-		logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))
+		// logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))
 		mp.size++
-
+		logger.Infof("Insert Tx, now has %v txs", mp.size)
 		return nil
 	}
 
@@ -389,6 +383,7 @@ func (mp *Mempool) removeTxs(committedRawTxs []common.Bytes) {
 			delete(mp.addressToTxGroup, txGroup.address)
 			elemsTobeRemoved = append(elemsTobeRemoved, txGroup)
 		}
+		logger.Infof("Removed txs, now has:%v", mp.size)
 	}
 
 	// Note after each iteration, the indices of the elems in the priority queue

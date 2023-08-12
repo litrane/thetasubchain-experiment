@@ -385,8 +385,8 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 	logger.Debugf("ApplyBlockTxs: Cleared mempool transactions, block.height = %v", block.Height)
 
 	// Annoying
-	logger.Infof("123456ApplyBlockTxs: Done, block.height = %v, txProcessTime = %v, handleDelayedUpdateTime = %v, commitTime = %v",
-		block.Height, txProcessTime, handleDelayedUpdateTime, commitTime)
+	logger.Infof("ApplyBlockTxs: Done, block.height = %v, txProcessTime = %v, handleDelayedUpdateTime = %v, commitTime = %v, totalTx = %v",
+		block.Height, txProcessTime, handleDelayedUpdateTime, commitTime, len(txProcessTime))
 
 	return result.OKWith(result.Info{"hasValidatorUpdate": hasValidatorUpdate})
 }

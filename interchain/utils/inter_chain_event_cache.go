@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"strconv"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/thetatoken/theta/common"
@@ -55,10 +56,15 @@ func (c *InterChainEventCache) Insert(event *score.InterChainMessageEvent) error
 func (c *InterChainEventCache) InsertList(events []*score.InterChainMessageEvent) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	for _, event := range events {
-		//fmt.Println("InsertList: ", event.Nonce)
-		c.db[InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce).String()] = event
+	if len(events) > 0 {
+		start := time.Now()
+		for _, event := range events {
+			c.db[InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce).String()] = event
+		}
+		insertTime := time.Since(start)
+		logger.Infof("Insert %v txs, costs %v", len(events), insertTime)
 	}
+
 	// store := kvstore.NewKVStore(c.db)
 	// for _, event := range events {
 	// 	err := store.Put(InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce), event)
