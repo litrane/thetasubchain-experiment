@@ -252,17 +252,33 @@ func (mw *MetachainWitness) mainloop(ctx context.Context) {
 
 func (mw *MetachainWitness) update() {
 	// Mainchain
+	start := time.Now()
+	totalStart := time.Now()
 	mw.updateMainchainBlockHeight()
+	updateMainchainHeightTime := time.Since(start)
+	start = time.Now()
 	dynasty := scom.CalculateDynasty(mw.mainchainBlockHeight)
+	calculateDynastyTime := time.Since(start)
+	start = time.Now()
 	if mw.witnessedDynasty == nil || dynasty.Cmp(mw.witnessedDynasty) > 0 { // needs to update the cache
 		mw.updateValidatorSetCache(dynasty)
 		mw.witnessedDynasty = dynasty
 	}
+	updateValidatorSetCache := time.Since(start)
+	start = time.Now()
 	mw.collectInterChainMessageEventsOnMainchain()
+	collectEventOnMainchainTime := time.Since(start)
 
 	// Subchain
+	start = time.Now()
 	mw.collectInterChainMessageEventsOnSubchain()
+	collectEventOnSubchainTime := time.Since(start)
+	start = time.Now()
 	mw.updateSubchainBlockHeight()
+	updateSubchainHeightTime := time.Since(start)
+	totalTime := time.Since(totalStart)
+	// annoying
+	logger.Infof("Witness update, updateMainchainHeightTime: %v, calculateDynastyTime: %v, updateValidatorSetCache: %v, collectEventOnMainchainTime: %v collectEventOnSubchainTime: %v, updateSubchainHeightTime:%v, totalTime: %v", updateMainchainHeightTime, calculateDynastyTime, updateValidatorSetCache, collectEventOnMainchainTime, collectEventOnSubchainTime, updateSubchainHeightTime, totalTime)
 }
 
 func (mw *MetachainWitness) updateMainchainBlockHeight() {
