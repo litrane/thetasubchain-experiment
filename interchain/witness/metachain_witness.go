@@ -266,7 +266,7 @@ func (mw *MetachainWitness) update() {
 	}
 	updateValidatorSetCache := time.Since(start)
 	start = time.Now()
-	mw.collectInterChainMessageEventsOnMainchain()
+	// mw.collectInterChainMessageEventsOnMainchain()
 	collectEventOnMainchainTime := time.Since(start)
 
 	// Subchain
@@ -318,12 +318,17 @@ func (mw *MetachainWitness) collectInterChainMessageEventsOnChain(queriedChainID
 		logger.Warnf("failed to get the last queryed height %v\n", err)
 	}
 	toBlock := mw.calculateToBlock(fromBlock, queriedChainID)
-	logger.Infof("Query inter-chain message events from block height %v to %v on chain %v", fromBlock.String(), toBlock.String(), queriedChainID.String())
+	// annoying
+	// logger.Infof("Query inter-chain message events from block height %v to %v on chain %v", fromBlock.String(), toBlock.String(), queriedChainID.String())
 	events := siu.QueryInterChainEventLog(queriedChainID, fromBlock, toBlock, tfuelTokenBankAddr, tnt20TokenBankAddr, tnt721TokenBankAddr, mw.queryTopics, ethRpcUrl)
-	err = mw.interChainEventCache.InsertList(events)
-	if err != nil { // should not happen
-		logger.Panicf("failed to insert events into cache")
+	if len(events) > 0 {
+		err = mw.interChainEventCache.InsertList(events)
+		if err != nil { // should not happen
+			logger.Panicf("failed to insert events into cache")
+		}
+		logger.Infof("got %v events", len(events))
 	}
+
 	mw.witnessState.setLastQueryedHeightForType(queriedChainID, toBlock)
 }
 
@@ -335,7 +340,7 @@ func (mw *MetachainWitness) getBlockScanStartingHeight(queriedChainID *big.Int) 
 		score.IMCEventTypeCrossChainTokenLockTNT20,
 		// score.IMCEventTypeCrossChainTokenLockTNT721,
 		// score.IMCEventTypeCrossChainVoucherBurnTFuel,
-		score.IMCEventTypeCrossChainVoucherBurnTNT20,
+		// score.IMCEventTypeCrossChainVoucherBurnTNT20,
 		// score.IMCEventTypeCrossChainVoucherBurnTNT721,
 	}
 

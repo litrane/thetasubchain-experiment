@@ -150,6 +150,8 @@ type Mempool struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	stopped bool
+
+	lastInsertTime time.Time
 }
 
 // CreateMempool creates an instance of Mempool
@@ -163,6 +165,7 @@ func CreateMempool(dispatcher *dp.Dispatcher, engine *sconsensus.ConsensusEngine
 		addressToTxGroup: make(map[common.Address]*mempoolTransactionGroup),
 		txBookeepper:     createTransactionBookkeeper(defaultMaxNumTxs),
 		wg:               &sync.WaitGroup{},
+		lastInsertTime:   time.Now(),
 	}
 }
 
@@ -192,6 +195,7 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 
 	// Delay tx verification when in fast sync
 	if mp.consensus.HasSynced() {
+		start := time.Now()
 		txInfo, checkTxRes = mp.ledger.ScreenTx(rawTx)
 		if !checkTxRes.IsOK() {
 			logger.Debugf("Transaction screening failed, tx: %v, error: %v", hex.EncodeToString(rawTx), checkTxRes.Message)
@@ -217,7 +221,7 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 		logger.Debugf("rawTx: %v, txInfo: %v", hex.EncodeToString(rawTx), txInfo)
 		// logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))
 		mp.size++
-		logger.Infof("Insert Tx, now has %v txs", mp.size)
+		logger.Infof("Insert Tx, now has %v txs, insert interval is %v, costs %v", mp.size, time.Since(mp.lastInsertTime), time.Since(start))
 		return nil
 	}
 
