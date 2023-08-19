@@ -205,6 +205,23 @@ func (ledger *Ledger) ScreenTxUnsafe(rawTx common.Bytes) (res result.Result) {
 	return res
 }
 
+// ScreenTxUnsafe screens the given transaction without locking.
+func (ledger *Ledger) ScreenTxUnsafeReturnTxInfo(rawTx common.Bytes) (txInfo *score.TxInfo, res result.Result) {
+	var tx types.Tx
+	tx, err := stypes.TxFromBytes(rawTx)
+	if err != nil {
+		return nil, result.Error("Error decoding tx: %v", err)
+	}
+
+	_, res = ledger.executor.ScreenTx(tx)
+
+	txInfo, res = ledger.executor.GetTxInfo(tx)
+	if res.IsError() {
+		return nil, res
+	}
+	return txInfo, res
+}
+
 // ScreenTx screens the given transaction
 func (ledger *Ledger) ScreenTx(rawTx common.Bytes) (txInfo *score.TxInfo, res result.Result) {
 	var tx types.Tx

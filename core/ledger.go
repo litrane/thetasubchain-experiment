@@ -15,22 +15,19 @@ const (
 	ScreenedView  ViewSelector = 3
 )
 
-//
 // TxInfo encapsulates information used by mempool to sorting.
-//
 type TxInfo struct {
 	EffectiveGasPrice *big.Int
 	Address           common.Address
 	Sequence          uint64
 }
 
-//
 // Ledger defines the interface of the ledger
-//
 type Ledger interface {
 	GetCurrentBlock() *Block
 	GetDynasty() *big.Int
 	ScreenTxUnsafe(rawTx common.Bytes) result.Result
+	ScreenTxUnsafeReturnTxInfo(rawTx common.Bytes) (priority *TxInfo, res result.Result)
 	ScreenTx(rawTx common.Bytes) (priority *TxInfo, res result.Result)
 	ProposeBlockTxs(block *Block, shouldIncludeValidatorUpdateTxs bool) (stateRootHash common.Hash, blockRawTxs []common.Bytes, res result.Result)
 	ApplyBlockTxs(block *Block) result.Result

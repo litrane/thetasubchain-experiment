@@ -176,8 +176,8 @@ func (mp *Mempool) SetLedger(ledger score.Ledger) {
 
 // InsertTransaction inserts the incoming transaction to mempool (submitted by the clients or relayed from peers)
 func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
-	mp.mutex.Lock()
-	defer mp.mutex.Unlock()
+	// mp.mutex.Lock()
+	// defer mp.mutex.Unlock()
 
 	if mp.txBookeepper.hasSeen(rawTx) {
 		logger.Debugf("Transaction already seen: %v, hash: 0x%v",
@@ -196,7 +196,8 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 	// Delay tx verification when in fast sync
 	if mp.consensus.HasSynced() {
 		start := time.Now()
-		txInfo, checkTxRes = mp.ledger.ScreenTx(rawTx)
+		// txInfo, checkTxRes = mp.ledger.ScreenTx(rawTx)
+		txInfo, checkTxRes = mp.ledger.ScreenTxUnsafeReturnTxInfo(rawTx)
 		if !checkTxRes.IsOK() {
 			logger.Debugf("Transaction screening failed, tx: %v, error: %v", hex.EncodeToString(rawTx), checkTxRes.Message)
 			return errors.New(checkTxRes.Message)
@@ -207,8 +208,11 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 		// sequence for an account is 6. The account accidentally submits txA (seq = 7), got rejected.
 		// He then submit txB(seq = 6), and then txA(seq = 7) again. For the second submission, txA
 		// should not be rejected even though it has been submitted earlier.
+		bookKeeperStart := time.Now()
 		mp.txBookeepper.record(rawTx)
-
+		bookKeeperTime := time.Since(bookKeeperStart)
+		insertTxGroupStart := time.Now()
+		mp.mutex.Lock()
 		txGroup, ok := mp.addressToTxGroup[txInfo.Address]
 		if ok {
 			txGroup.AddTx(rawTx, txInfo)
@@ -217,11 +221,14 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 			txGroup = createMempoolTransactionGroup(rawTx, txInfo)
 			mp.addressToTxGroup[txInfo.Address] = txGroup
 		}
+		defer mp.mutex.Unlock()
 		mp.candidateTxs.Push(txGroup)
+		insertTxGroupTime := time.Since(insertTxGroupStart)
 		logger.Debugf("rawTx: %v, txInfo: %v", hex.EncodeToString(rawTx), txInfo)
 		// logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))
 		mp.size++
-		logger.Infof("Insert Tx, now has %v txs, insert interval is %v, costs %v", mp.size, time.Since(mp.lastInsertTime), time.Since(start))
+		logger.Infof("Insert Tx, now has %v txs, insert interval is %v, costs %v, insertTx costs %v, bookKeeperRecordTime %v", mp.size, time.Since(mp.lastInsertTime), time.Since(start), insertTxGroupTime, bookKeeperTime)
+		mp.lastInsertTime = time.Now()
 		return nil
 	}
 
