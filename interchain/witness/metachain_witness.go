@@ -278,7 +278,7 @@ func (mw *MetachainWitness) update() {
 	updateSubchainHeightTime := time.Since(start)
 	totalTime := time.Since(totalStart)
 	// annoying
-	logger.Infof("Witness update, updateMainchainHeightTime: %v, calculateDynastyTime: %v, updateValidatorSetCache: %v, collectEventOnMainchainTime: %v collectEventOnSubchainTime: %v, updateSubchainHeightTime:%v, totalTime: %v", updateMainchainHeightTime, calculateDynastyTime, updateValidatorSetCache, collectEventOnMainchainTime, collectEventOnSubchainTime, updateSubchainHeightTime, totalTime)
+	logger.Debugf("Witness update, updateMainchainHeightTime: %v, calculateDynastyTime: %v, updateValidatorSetCache: %v, collectEventOnMainchainTime: %v collectEventOnSubchainTime: %v, updateSubchainHeightTime:%v, totalTime: %v", updateMainchainHeightTime, calculateDynastyTime, updateValidatorSetCache, collectEventOnMainchainTime, collectEventOnSubchainTime, updateSubchainHeightTime, totalTime)
 }
 
 func (mw *MetachainWitness) updateMainchainBlockHeight() {

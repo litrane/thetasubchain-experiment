@@ -208,10 +208,7 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 		// sequence for an account is 6. The account accidentally submits txA (seq = 7), got rejected.
 		// He then submit txB(seq = 6), and then txA(seq = 7) again. For the second submission, txA
 		// should not be rejected even though it has been submitted earlier.
-		bookKeeperStart := time.Now()
 		mp.txBookeepper.record(rawTx)
-		bookKeeperTime := time.Since(bookKeeperStart)
-		insertTxGroupStart := time.Now()
 		mp.mutex.Lock()
 		txGroup, ok := mp.addressToTxGroup[txInfo.Address]
 		if ok {
@@ -223,11 +220,10 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 		}
 		defer mp.mutex.Unlock()
 		mp.candidateTxs.Push(txGroup)
-		insertTxGroupTime := time.Since(insertTxGroupStart)
 		logger.Debugf("rawTx: %v, txInfo: %v", hex.EncodeToString(rawTx), txInfo)
 		// logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))
 		mp.size++
-		logger.Infof("Insert Tx, now has %v txs, insert interval is %v, costs %v, insertTx costs %v, bookKeeperRecordTime %v", mp.size, time.Since(mp.lastInsertTime), time.Since(start), insertTxGroupTime, bookKeeperTime)
+		logger.Infof("Insert Tx, now has %v txs, insert interval is %v, costs %v", mp.size, time.Since(mp.lastInsertTime), time.Since(start))
 		mp.lastInsertTime = time.Now()
 		return nil
 	}
