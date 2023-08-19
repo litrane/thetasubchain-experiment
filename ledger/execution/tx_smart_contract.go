@@ -156,7 +156,12 @@ func (exec *SmartContractTxExecutor) sanityCheck(chainID string, view *slst.Stor
 }
 
 func (exec *SmartContractTxExecutor) process(chainID string, view *slst.StoreView, viewSel score.ViewSelector, transaction types.Tx) (common.Hash, result.Result) {
+
 	tx := transaction.(*types.SmartContractTx)
+
+	if viewSel == score.ScreenedView || viewSel == score.CheckedView { // only record the receipt for the delivered views
+		return types.TxID(chainID, tx), result.OK
+	}
 
 	view.ResetLogs()
 	view.ResetBalanceChanges()
