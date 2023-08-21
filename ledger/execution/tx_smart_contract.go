@@ -159,7 +159,7 @@ func (exec *SmartContractTxExecutor) process(chainID string, view *slst.StoreVie
 
 	tx := transaction.(*types.SmartContractTx)
 
-	if viewSel == score.ScreenedView || viewSel == score.CheckedView { // only record the receipt for the delivered views
+	if viewSel == score.ScreenedView {
 		return types.TxID(chainID, tx), result.OK
 	}
 
