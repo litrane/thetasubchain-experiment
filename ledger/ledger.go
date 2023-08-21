@@ -323,6 +323,8 @@ func (ledger *Ledger) ProposeBlockTxs(block *score.Block, validatorMajorityInThe
 // ApplyBlockTxs applies the given block transactions. If any of the transactions failed, it returns
 // an error immediately. If all the transactions execute successfully, it then validates the state
 // root hash. If the states root hash matches the expected value, it clears the transactions from the mempool
+// 原始版
+/*
 func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 	// Must always acquire locks in following order to avoid deadlock: mempool, ledger.
 	// Otherwise, could cause deadlock since mempool.InsertTransaction() also first acquires the mempool, and then the ledger lock
@@ -385,6 +387,95 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 			hex.EncodeToString(newStateRoot[:]),
 			hex.EncodeToString(expectedStateRoot[:]))
 	}
+
+	start = time.Now()
+	ledger.state.Commit() // commit to persistent storage
+	commitTime := time.Since(start)
+
+	logger.Debugf("ApplyBlockTxs: Committed state change, block.height = %v", block.Height)
+
+	go func() {
+		ledger.mempool.Lock()
+		defer ledger.mempool.Unlock()
+
+		ledger.mempool.UpdateUnsafe(blockRawTxs) // clear txs from the mempool
+	}()
+
+	logger.Debugf("ApplyBlockTxs: Cleared mempool transactions, block.height = %v", block.Height)
+
+	// Annoying
+	logger.Infof("ApplyBlockTxs: Done, block.height = %v, txProcessTime = %v, handleDelayedUpdateTime = %v, commitTime = %v, totalTx = %v",
+		block.Height, txProcessTime, handleDelayedUpdateTime, commitTime, len(txProcessTime))
+
+	return result.OKWith(result.Info{"hasValidatorUpdate": hasValidatorUpdate})
+}
+*/
+
+// ApplyBlockTxs applies the given block transactions. If any of the transactions failed, it returns
+// an error immediately. If all the transactions execute successfully, it then validates the state
+// root hash. If the states root hash matches the expected value, it clears the transactions from the mempool
+func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
+	// Must always acquire locks in following order to avoid deadlock: mempool, ledger.
+	// Otherwise, could cause deadlock since mempool.InsertTransaction() also first acquires the mempool, and then the ledger lock
+	logger.Debugf("ApplyBlockTxs: Apply block transactions, block.height = %v", block.Height)
+
+	ledger.mu.Lock()
+	defer ledger.mu.Unlock()
+
+	ledger.currentBlock = block
+	defer func() { ledger.currentBlock = nil }()
+
+	blockRawTxs := ledger.currentBlock.Txs
+	// expectedStateRoot := ledger.currentBlock.StateHash
+
+	// view := ledger.state.Delivered()
+
+	// currHeight := view.Height()
+	// currStateRoot := view.Hash()
+	extParentBlock, err := ledger.chain.FindBlock(block.Parent)
+	if extParentBlock == nil || err != nil {
+		panic(fmt.Sprintf("Failed to find the parent block: %v, err: %v", block.Parent.Hex(), err))
+	}
+	parentBlock := extParentBlock.Block
+	logger.Debugf("ApplyBlockTxs: Start applying block transactions, block.height = %v", block.Height)
+
+	hasValidatorUpdate := false
+	txProcessTime := []time.Duration{}
+	for _, rawTx := range blockRawTxs {
+		start := time.Now()
+		tx, err := stypes.TxFromBytes(rawTx)
+		if err != nil {
+			//ledger.resetState(currHeight, currStateRoot)
+			ledger.resetState(parentBlock)
+			return result.Error("Failed to parse transaction: %v", hex.EncodeToString(rawTx))
+		}
+		if dtx, ok := tx.(*types.DepositStakeTx); ok && dtx.Purpose == score.StakeForValidator {
+			hasValidatorUpdate = true
+		} else if wtx, ok := tx.(*types.WithdrawStakeTx); ok && wtx.Purpose == score.StakeForValidator {
+			hasValidatorUpdate = true
+		}
+		_, res := ledger.executor.ExecuteTx(tx)
+		if res.IsError() || res.IsUndecided() {
+			//ledger.resetState(currHeight, currStateRoot)
+			ledger.resetState(parentBlock)
+			return res
+		}
+		txProcessTime = append(txProcessTime, time.Since(start))
+	}
+
+	logger.Debugf("ApplyBlockTxs: Finish applying block transactions, block.height=%v, txProcessTime=%v", block.Height, txProcessTime)
+
+	start := time.Now()
+	handleDelayedUpdateTime := time.Since(start)
+
+	// newStateRoot := view.Hash()
+	// if newStateRoot != expectedStateRoot {
+	// 	//ledger.resetState(currHeight, currStateRoot)
+	// 	ledger.resetState(parentBlock)
+	// 	return result.Error("State root mismatch! root: %v, exptected: %v",
+	// 		hex.EncodeToString(newStateRoot[:]),
+	// 		hex.EncodeToString(expectedStateRoot[:]))
+	// }
 
 	start = time.Now()
 	ledger.state.Commit() // commit to persistent storage

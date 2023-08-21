@@ -159,7 +159,7 @@ func (exec *SmartContractTxExecutor) process(chainID string, view *slst.StoreVie
 
 	tx := transaction.(*types.SmartContractTx)
 
-	if viewSel == score.ScreenedView {
+	if viewSel == score.ScreenedView || viewSel == score.CheckedView {
 		return types.TxID(chainID, tx), result.OK
 	}
 
