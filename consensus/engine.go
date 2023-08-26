@@ -1181,8 +1181,9 @@ func (e *ConsensusEngine) propose() {
 		if err != nil {
 			e.logger.WithFields(log.Fields{"error": err}).Fatal("Failed to add proposed block to chain")
 		}
-
-		e.logger.WithFields(log.Fields{"proposal": proposal}).Info("Making proposal")
+		//anoying
+		// e.logger.WithFields(log.Fields{"proposal": proposal}).Info("Making proposal")
+		e.logger.WithFields(log.Fields{"proposal height": proposal.Block.Height, "txes": len(proposal.Block.Txs)}).Info("Making proposal")
 	}
 
 	payload, err := rlp.EncodeToBytes(proposal)
