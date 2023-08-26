@@ -194,39 +194,41 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 	var checkTxRes result.Result
 
 	// Delay tx verification when in fast sync
-	// if mp.consensus.HasSynced() {
+	if mp.consensus.HasSynced() {
 
-	// txInfo, checkTxRes = mp.ledger.ScreenTx(rawTx)
-	txInfo, checkTxRes = mp.ledger.ScreenTxUnsafeReturnTxInfo(rawTx)
-	if !checkTxRes.IsOK() {
-		logger.Debugf("Transaction screening failed, tx: %v, error: %v", hex.EncodeToString(rawTx), checkTxRes.Message)
-		return errors.New(checkTxRes.Message)
-	}
+		// txInfo, checkTxRes = mp.ledger.ScreenTx(rawTx)
+		txInfo, checkTxRes = mp.ledger.ScreenTxUnsafeReturnTxInfo(rawTx)
+		if !checkTxRes.IsOK() {
+			logger.Debugf("Transaction screening failed, tx: %v, error: %v", hex.EncodeToString(rawTx), checkTxRes.Message)
+			return errors.New(checkTxRes.Message)
+		}
 
-	// only record the transactions that passed the screening. This is because that
-	// an invalid transaction could becoume valid later on. For example, assume expected
-	// sequence for an account is 6. The account accidentally submits txA (seq = 7), got rejected.
-	// He then submit txB(seq = 6), and then txA(seq = 7) again. For the second submission, txA
-	// should not be rejected even though it has been submitted earlier.
-	mp.txBookeepper.record(rawTx)
-	// mp.mutex.Lock()
-	txGroup, ok := mp.addressToTxGroup[txInfo.Address]
-	if ok {
-		txGroup.AddTx(rawTx, txInfo)
-		mp.candidateTxs.Remove(txGroup.index) // Need to re-insert txGroup into queue since its priority could change.
+		// only record the transactions that passed the screening. This is because that
+		// an invalid transaction could becoume valid later on. For example, assume expected
+		// sequence for an account is 6. The account accidentally submits txA (seq = 7), got rejected.
+		// He then submit txB(seq = 6), and then txA(seq = 7) again. For the second submission, txA
+		// should not be rejected even though it has been submitted earlier.
+		mp.txBookeepper.record(rawTx)
+		// mp.mutex.Lock()
+		txGroup, ok := mp.addressToTxGroup[txInfo.Address]
+		if ok {
+			txGroup.AddTx(rawTx, txInfo)
+			mp.candidateTxs.Remove(txGroup.index) // Need to re-insert txGroup into queue since its priority could change.
+		} else {
+			txGroup = createMempoolTransactionGroup(rawTx, txInfo)
+			mp.addressToTxGroup[txInfo.Address] = txGroup
+		}
+		// defer mp.mutex.Unlock()
+		mp.candidateTxs.Push(txGroup)
+		logger.Debugf("rawTx: %v, txInfo: %v", hex.EncodeToString(rawTx), txInfo)
+		// logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))
+		mp.size++
+		logger.Infof("Insert Tx, now has %v txs, insert interval is %v, costs %v", mp.size, time.Since(mp.lastInsertTime), time.Since(start))
+		mp.lastInsertTime = time.Now()
+		return nil
 	} else {
-		txGroup = createMempoolTransactionGroup(rawTx, txInfo)
-		mp.addressToTxGroup[txInfo.Address] = txGroup
+		logger.Info("NO not has synced!")
 	}
-	// defer mp.mutex.Unlock()
-	mp.candidateTxs.Push(txGroup)
-	logger.Debugf("rawTx: %v, txInfo: %v", hex.EncodeToString(rawTx), txInfo)
-	// logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))
-	mp.size++
-	logger.Infof("Insert Tx, now has %v txs, insert interval is %v, costs %v", mp.size, time.Since(mp.lastInsertTime), time.Since(start))
-	mp.lastInsertTime = time.Now()
-	return nil
-	// }
 
 	return FastsyncSkipTxError
 }

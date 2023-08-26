@@ -105,7 +105,7 @@ func (t *ThetaRPCService) txCallback() {
 			return
 		case block := <-t.consensus.FinalizedBlocks():
 			logger.Infof("Processing finalized block, height=%v", block.Height)
-
+			start := time.Now()
 			for _, tx := range block.Txs {
 				txHash := crypto.Keccak256Hash(tx)
 				cb, ok := txCallbackManager.RemoveCallback(txHash)
@@ -114,7 +114,7 @@ func (t *ThetaRPCService) txCallback() {
 				}
 			}
 
-			logger.Infof("Done processing finalized block, height=%v", block.Height)
+			logger.Infof("Done processing finalized block, height=%v, costs=%v", block.Height, time.Since(start))
 		case <-timer.C:
 			logger.Debugf("txCallbackManager.Trim()")
 
