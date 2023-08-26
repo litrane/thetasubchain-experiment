@@ -988,7 +988,7 @@ func (e *ConsensusEngine) finalizeBlock(block *score.ExtendedBlock) error {
 
 	// Force update TX index on block finalization so that the index doesn't point to
 	// duplicate TX in fork.
-	e.chain.AddTxsToIndex(block, true)
+	// e.chain.AddTxsToIndex(block, true)
 	addTxsToIndexTime := time.Since(start)
 	select {
 	case e.finalizedBlocks <- block.Block:
