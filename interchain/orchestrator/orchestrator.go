@@ -139,6 +139,10 @@ func NewOrchestrator(db database.Database, updateInterval int, interChainEventCa
 	}
 	targetChainTokenBank := oc.mainchainTNT20TokenBank
 	oc.maxNonce, _ = targetChainTokenBank.GetMaxProcessedTokenLockNonce(nil, big.NewInt(360001))
+	if oc.maxNonce == nil {
+		oc.maxNonce = big.NewInt(0)
+	}
+
 	oc.nonce, _ = oc.mainchainEthRpcClient.PendingNonceAt(context.Background(), oc.privateKey.PublicKey().Address())
 	return oc
 }
