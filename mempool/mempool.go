@@ -178,7 +178,7 @@ func (mp *Mempool) SetLedger(ledger score.Ledger) {
 func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 	// mp.mutex.Lock()
 	// defer mp.mutex.Unlock()
-
+	start := time.Now()
 	if mp.txBookeepper.hasSeen(rawTx) {
 		logger.Debugf("Transaction already seen: %v, hash: 0x%v",
 			hex.EncodeToString(rawTx), getTransactionHash(rawTx))
@@ -195,7 +195,7 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 
 	// Delay tx verification when in fast sync
 	if mp.consensus.HasSynced() {
-		start := time.Now()
+
 		// txInfo, checkTxRes = mp.ledger.ScreenTx(rawTx)
 		txInfo, checkTxRes = mp.ledger.ScreenTxUnsafeReturnTxInfo(rawTx)
 		if !checkTxRes.IsOK() {

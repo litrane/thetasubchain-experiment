@@ -204,13 +204,13 @@ func (t *ThetaRPCService) BroadcastRawTransactionAsync(
 	logger.Infof("Prepare to broadcast raw transaction (async): %v, hash: %v", hex.EncodeToString(txBytes), hash.Hex())
 
 	err = t.mempool.InsertTransaction(txBytes)
-	if err == nil || err == smp.FastsyncSkipTxError {
-		t.mempool.BroadcastTx(txBytes) // still broadcast the transactions received locally during the fastsync mode
-		logger.Infof("Broadcasted raw transaction (async): %v, hash: %v", hex.EncodeToString(txBytes), hash.Hex())
-		return nil
-	}
+	// if err == nil || err == smp.FastsyncSkipTxError {
+	// 	t.mempool.BroadcastTx(txBytes) // still broadcast the transactions received locally during the fastsync mode
+	// 	logger.Infof("Broadcasted raw transaction (async): %v, hash: %v", hex.EncodeToString(txBytes), hash.Hex())
+	// 	return nil
+	// }
 
-	logger.Warnf("Failed to broadcast raw transaction (async): %v, hash: %v, err: %v", hex.EncodeToString(txBytes), hash.Hex(), err)
+	// logger.Warnf("Failed to broadcast raw transaction (async): %v, hash: %v, err: %v", hex.EncodeToString(txBytes), hash.Hex(), err)
 
 	return err
 }
