@@ -318,8 +318,11 @@ func (mw *MetachainWitness) collectInterChainMessageEventsOnChain(queriedChainID
 		logger.Warnf("failed to get the last queryed height %v\n", err)
 	}
 	toBlock := mw.calculateToBlock(fromBlock, queriedChainID)
+	if toBlock.Cmp(fromBlock) == 0 {
+		return
+	}
 	// annoying
-	// logger.Infof("Query inter-chain message events from block height %v to %v on chain %v", fromBlock.String(), toBlock.String(), queriedChainID.String())
+	logger.Infof("Query inter-chain message events from block height %v to %v on chain %v", fromBlock.String(), toBlock.String(), queriedChainID.String())
 	events := siu.QueryInterChainEventLog(queriedChainID, fromBlock, toBlock, tfuelTokenBankAddr, tnt20TokenBankAddr, tnt721TokenBankAddr, mw.queryTopics, ethRpcUrl)
 	if len(events) > 0 {
 		err = mw.interChainEventCache.InsertList(events)
