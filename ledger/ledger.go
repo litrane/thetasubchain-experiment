@@ -290,6 +290,78 @@ func (ledger *Ledger) ProposeBlockTxs(block *score.Block, validatorMajorityInThe
 	start = time.Now()
 
 	blockRawTxs = []common.Bytes{}
+	// for _, rawTxCandidate := range rawTxCandidates {
+	// tx, err := stypes.TxFromBytes(rawTxCandidate)
+	// if err != nil {
+	// 	continue
+	// }
+
+	// _, res := ledger.executor.CheckTx(tx)
+	// if res.IsError() {
+	// 	logger.Errorf("Transaction check failed: errMsg = %v, tx = %v", res.Message, tx)
+	// 	continue
+	// }
+	// blockRawTxs = append(blockRawTxs, rawTxCandidate)
+	// }
+	blockRawTxs = append(blockRawTxs, rawTxCandidates...)
+
+	logger.Debugf("ProposeBlockTxs: block transactions executed, block.height = %v", block.Height)
+	execTxsTime := time.Since(start)
+	start = time.Now()
+
+	stateRootHash = view.Hash()
+
+	logger.Debugf("ProposeBlockTxs: delay update handled, block.height = %v", block.Height)
+	handleDelayedUpdateTime := time.Since(start)
+
+	// annoying
+	logger.Infof("ProposeBlockTxs: Done, block.height = %v, preparationTime = %v, addTxsTime = %v, execTxsTime = %v, handleDelayedUpdateTime = %v",
+		block.Height, preparationTime, addTxsTime, execTxsTime, handleDelayedUpdateTime)
+
+	return stateRootHash, blockRawTxs, result.OK
+}
+
+/*
+// ProposeBlockTxs collects and executes a list of transactions, which will be used to assemble the next blockl
+// It also clears these transactions from the mempool.
+// 原始版
+func (ledger *Ledger) ProposeBlockTxs(block *score.Block, validatorMajorityInTheSameDynasty bool) (stateRootHash common.Hash, blockRawTxs []common.Bytes, res result.Result) {
+	// Must always acquire locks in following order to avoid deadlock: mempool, ledger.
+	// Otherwise, could cause deadlock since mempool.InsertTransaction() also first acquires the mempool, and then the ledger lock
+	logger.Debugf("ProposeBlockTxs: Propose block transactions, block.height = %v", block.Height)
+	start := time.Now()
+
+	ledger.mempool.Lock()
+	defer ledger.mempool.Unlock()
+
+	ledger.mu.Lock()
+	defer ledger.mu.Unlock()
+
+	ledger.currentBlock = block
+	defer func() { ledger.currentBlock = nil }()
+
+	view := ledger.state.Checked()
+
+	logger.Debugf("ProposeBlockTxs: Start adding block transactions, block.height = %v", block.Height)
+	preparationTime := time.Since(start)
+	start = time.Now()
+
+	// Add special transactions
+	rawTxCandidates := []common.Bytes{}
+	// ledger.addSpecialTransactions(block, view, &rawTxCandidates, validatorMajorityInTheSameDynasty)
+
+	// Add regular transactions submitted by the clients
+	regularRawTxs := ledger.mempool.ReapUnsafe(score.MaxNumRegularTxsPerBlock)
+	for _, regularRawTx := range regularRawTxs {
+		rawTxCandidates = append(rawTxCandidates, regularRawTx)
+		logger.Debugf("regular raw tx %v added to block", regularRawTx)
+	}
+
+	logger.Debugf("ProposeBlockTxs: block transactions added, block.height = %v", block.Height)
+	addTxsTime := time.Since(start)
+	start = time.Now()
+
+	blockRawTxs = []common.Bytes{}
 	for _, rawTxCandidate := range rawTxCandidates {
 		tx, err := stypes.TxFromBytes(rawTxCandidate)
 		if err != nil {
@@ -319,6 +391,7 @@ func (ledger *Ledger) ProposeBlockTxs(block *score.Block, validatorMajorityInThe
 
 	return stateRootHash, blockRawTxs, result.OK
 }
+*/
 
 // ApplyBlockTxs applies the given block transactions. If any of the transactions failed, it returns
 // an error immediately. If all the transactions execute successfully, it then validates the state
