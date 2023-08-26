@@ -441,6 +441,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 
 	hasValidatorUpdate := false
 	txProcessTime := []time.Duration{}
+	totalTxProcessTimeStart := time.Now()
 	for _, rawTx := range blockRawTxs {
 		start := time.Now()
 		tx, err := stypes.TxFromBytes(rawTx)
@@ -462,6 +463,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 		}
 		txProcessTime = append(txProcessTime, time.Since(start))
 	}
+	totalTxProcessTime := time.Since(totalTxProcessTimeStart)
 
 	logger.Debugf("ApplyBlockTxs: Finish applying block transactions, block.height=%v, txProcessTime=%v", block.Height, txProcessTime)
 
@@ -493,8 +495,8 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 	logger.Debugf("ApplyBlockTxs: Cleared mempool transactions, block.height = %v", block.Height)
 
 	// Annoying
-	logger.Infof("ApplyBlockTxs: Done, block.height = %v, txProcessTime = %v, handleDelayedUpdateTime = %v, commitTime = %v, totalTx = %v",
-		block.Height, txProcessTime, handleDelayedUpdateTime, commitTime, len(txProcessTime))
+	logger.Infof("ApplyBlockTxs: Done, block.height = %v, txProcessTime = %v, handleDelayedUpdateTime = %v, commitTime = %v, totalTx = %v, totalTime = %v",
+		block.Height, txProcessTime, handleDelayedUpdateTime, commitTime, len(txProcessTime), totalTxProcessTime)
 
 	return result.OKWith(result.Info{"hasValidatorUpdate": hasValidatorUpdate})
 }
