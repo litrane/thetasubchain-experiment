@@ -209,7 +209,7 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 		// He then submit txB(seq = 6), and then txA(seq = 7) again. For the second submission, txA
 		// should not be rejected even though it has been submitted earlier.
 		mp.txBookeepper.record(rawTx)
-		mp.mutex.Lock()
+		// mp.mutex.Lock()
 		txGroup, ok := mp.addressToTxGroup[txInfo.Address]
 		if ok {
 			txGroup.AddTx(rawTx, txInfo)
@@ -218,7 +218,7 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 			txGroup = createMempoolTransactionGroup(rawTx, txInfo)
 			mp.addressToTxGroup[txInfo.Address] = txGroup
 		}
-		defer mp.mutex.Unlock()
+		// defer mp.mutex.Unlock()
 		mp.candidateTxs.Push(txGroup)
 		logger.Debugf("rawTx: %v, txInfo: %v", hex.EncodeToString(rawTx), txInfo)
 		// logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))

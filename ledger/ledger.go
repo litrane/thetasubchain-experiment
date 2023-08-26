@@ -213,7 +213,7 @@ func (ledger *Ledger) ScreenTxUnsafeReturnTxInfo(rawTx common.Bytes) (txInfo *sc
 		return nil, result.Error("Error decoding tx: %v", err)
 	}
 
-	_, res = ledger.executor.ScreenTx(tx)
+	// _, _ = ledger.executor.ScreenTx(tx)
 
 	txInfo, res = ledger.executor.GetTxInfo(tx)
 	if res.IsError() {
