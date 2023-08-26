@@ -317,8 +317,9 @@ func (mw *MetachainWitness) collectInterChainMessageEventsOnChain(queriedChainID
 	} else if err != nil {
 		logger.Warnf("failed to get the last queryed height %v\n", err)
 	}
+	fromBlock = common.Big0.Add(fromBlock, common.Big1)
 	toBlock := mw.calculateToBlock(fromBlock, queriedChainID)
-	if toBlock.Cmp(fromBlock) == 0 {
+	if toBlock.Cmp(fromBlock) == -1 {
 		return
 	}
 	// annoying
