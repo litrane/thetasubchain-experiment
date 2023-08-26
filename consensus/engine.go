@@ -968,23 +968,32 @@ func (e *ConsensusEngine) finalizeBlock(block *score.ExtendedBlock) error {
 
 	e.logger.WithFields(log.Fields{"block.Hash": block.Hash().Hex(), "block.Height": block.Height}).Info("Finalizing block")
 
+	start := time.Now()
 	e.state.SetLastFinalizedBlock(block)
+	setLastFinalizedBlockTime := time.Since(start)
+	start = time.Now()
 	e.ledger.FinalizeState(block.Height, block.StateHash)
-
+	finalizeStateTime := time.Since(start)
+	start = time.Now()
 	e.checkSyncStatus()
+	checkSyncStatusTime := time.Since(start)
+	start = time.Now()
 
 	// Mark block and its ancestors as finalized.
 	if err := e.chain.FinalizePreviousBlocks(block.Hash()); err != nil {
 		return err
 	}
+	finalizePreviousBlocksTime := time.Since(start)
+	start = time.Now()
 
 	// Force update TX index on block finalization so that the index doesn't point to
 	// duplicate TX in fork.
 	e.chain.AddTxsToIndex(block, true)
-
+	addTxsToIndexTime := time.Since(start)
 	select {
 	case e.finalizedBlocks <- block.Block:
-		e.logger.Infof("Notified finalized block, height=%v", block.Height)
+		// e.logger.Infof("Notified finalized block, height=%v", block.Height)
+		e.logger.Infof("Notified finalized block, height=%v,setLastFinalizedBlockTime=%v, finalizeStateTime=%v, checkSyncStatusTime=%v, finalizePreviousBlocksTime=%v, addTxsToIndexTime=%v", block.Height, setLastFinalizedBlockTime, finalizeStateTime, checkSyncStatusTime, finalizePreviousBlocksTime, addTxsToIndexTime)
 	default:
 		e.logger.Warnf("Failed to notify finalized block, height=%v", block.Height)
 	}
