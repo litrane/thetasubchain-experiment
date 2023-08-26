@@ -558,12 +558,12 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 
 	logger.Debugf("ApplyBlockTxs: Committed state change, block.height = %v", block.Height)
 
-	go func() {
-		ledger.mempool.Lock()
-		defer ledger.mempool.Unlock()
+	// go func() {
+	// 	ledger.mempool.Lock()
+	// 	defer ledger.mempool.Unlock()
 
-		ledger.mempool.UpdateUnsafe(blockRawTxs) // clear txs from the mempool
-	}()
+	// 	ledger.mempool.UpdateUnsafe(blockRawTxs) // clear txs from the mempool
+	// }()
 
 	logger.Debugf("ApplyBlockTxs: Cleared mempool transactions, block.height = %v", block.Height)
 
