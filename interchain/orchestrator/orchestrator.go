@@ -577,7 +577,7 @@ func (oc *Orchestrator) buildTxOpts(chainID *big.Int, ecClient *ec.Client) (*bin
 	// 	gasPrice = common.Big0
 	// }
 	gasPrice = big.NewInt(4000000000000)
-	println("gasPrice", gasPrice.Int64())
+	// println("gasPrice", gasPrice.Int64())
 	//nonce, err := ecClient.PendingNonceAt(context.Background(), oc.privateKey.PublicKey().Address())
 	nonce := oc.nonce
 	oc.nonce++

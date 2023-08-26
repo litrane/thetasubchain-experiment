@@ -33,11 +33,12 @@ import (
 var logger *log.Entry
 
 type ThetaRPCService struct {
-	mempool    *smp.Mempool
-	ledger     *sld.Ledger
-	dispatcher *dispatcher.Dispatcher
-	chain      *sbc.Chain
-	consensus  *sconsensus.ConsensusEngine
+	mempool        *smp.Mempool
+	ledger         *sld.Ledger
+	dispatcher     *dispatcher.Dispatcher
+	chain          *sbc.Chain
+	consensus      *sconsensus.ConsensusEngine
+	LastInsertTime time.Time
 
 	// Life cycle
 	wg      *sync.WaitGroup
@@ -61,7 +62,8 @@ func NewThetaRPCServer(mempool *smp.Mempool, ledger *sld.Ledger, dispatcher *dis
 	chain *sbc.Chain, consensus *sconsensus.ConsensusEngine) *ThetaRPCServer {
 	t := &ThetaRPCServer{
 		ThetaRPCService: &ThetaRPCService{
-			wg: &sync.WaitGroup{},
+			wg:             &sync.WaitGroup{},
+			LastInsertTime: time.Now(),
 		},
 	}
 

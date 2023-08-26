@@ -193,6 +193,7 @@ type BroadcastRawTransactionAsyncResult struct {
 
 func (t *ThetaRPCService) BroadcastRawTransactionAsync(
 	args *BroadcastRawTransactionAsyncArgs, result *BroadcastRawTransactionAsyncResult) (err error) {
+	start := time.Now()
 	txBytes, err := decodeTxHexBytes(args.TxBytes)
 	if err != nil {
 		return err
@@ -201,7 +202,7 @@ func (t *ThetaRPCService) BroadcastRawTransactionAsync(
 	hash := crypto.Keccak256Hash(txBytes)
 	result.TxHash = hash.Hex()
 
-	logger.Infof("Prepare to broadcast raw transaction (async): %v, hash: %v", hex.EncodeToString(txBytes), hash.Hex())
+	// logger.Infof("Prepare to broadcast raw transaction (async): %v, hash: %v", hex.EncodeToString(txBytes), hash.Hex())
 
 	err = t.mempool.InsertTransaction(txBytes)
 	// if err == nil || err == smp.FastsyncSkipTxError {
@@ -211,7 +212,8 @@ func (t *ThetaRPCService) BroadcastRawTransactionAsync(
 	// }
 
 	// logger.Warnf("Failed to broadcast raw transaction (async): %v, hash: %v, err: %v", hex.EncodeToString(txBytes), hash.Hex(), err)
-
+	logger.Infof("broadcastRawTx costs %v, interval is %v", time.Since(start), time.Since(t.LastInsertTime))
+	t.LastInsertTime = time.Now()
 	return err
 }
 
