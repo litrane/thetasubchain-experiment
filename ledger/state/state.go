@@ -6,8 +6,8 @@ import (
 
 	"github.com/thetatoken/theta/common"
 	"github.com/thetatoken/theta/common/result"
-	score "github.com/thetatoken/thetasubchain/core"
 	"github.com/thetatoken/theta/store/database"
+	score "github.com/thetatoken/thetasubchain/core"
 )
 
 //
@@ -33,7 +33,8 @@ type LedgerState struct {
 
 // NewLedgerState creates a new Leger State with given store.
 // NOTE: before using the LedgerState, we need to call LedgerState.ResetState() to set
-//       the proper height and stateRootHash
+//
+//	the proper height and stateRootHash
 func NewLedgerState(chainID string, db database.Database, tagger Tagger) *LedgerState {
 	s := &LedgerState{
 		chainID:  chainID,
@@ -52,7 +53,7 @@ func NewLedgerState(chainID string, db database.Database, tagger Tagger) *Ledger
 }
 
 // ResetState resets the height and state root of its storeviews, and clear the in-memory states
-//func (s *LedgerState) ResetState(height uint64, stateRootHash common.Hash) result.Result
+// func (s *LedgerState) ResetState(height uint64, stateRootHash common.Hash) result.Result
 func (s *LedgerState) ResetState(block *score.Block) result.Result {
 	s.parentBlock = block
 
@@ -136,6 +137,7 @@ func (s *LedgerState) Finalized() *StoreView {
 // returns the hash for the commit.
 func (s *LedgerState) Commit() common.Hash {
 	hash := s.delivered.Save()
+	fmt.Println("!!!!!!!!!!!! commit", hash.Hex())
 	s.delivered.IncrementHeight()
 	s.dbTagger.Tag(s.delivered.height, hash)
 

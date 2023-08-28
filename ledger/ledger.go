@@ -268,7 +268,8 @@ func (ledger *Ledger) ProposeBlockTxs(block *score.Block, validatorMajorityInThe
 	ledger.currentBlock = block
 	defer func() { ledger.currentBlock = nil }()
 
-	view := ledger.state.Checked()
+	// view := ledger.state.Checked()
+	view := ledger.state.Delivered()
 
 	logger.Debugf("ProposeBlockTxs: Start adding block transactions, block.height = %v", block.Height)
 	preparationTime := time.Since(start)
