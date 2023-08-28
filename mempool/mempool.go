@@ -151,21 +151,23 @@ type Mempool struct {
 	cancel  context.CancelFunc
 	stopped bool
 
-	lastInsertTime time.Time
+	lastInsertTimeBegining time.Time
+	lastInsertTime         time.Time
 }
 
 // CreateMempool creates an instance of Mempool
 func CreateMempool(dispatcher *dp.Dispatcher, engine *sconsensus.ConsensusEngine) *Mempool {
 	return &Mempool{
-		mutex:            &sync.Mutex{},
-		consensus:        engine,
-		dispatcher:       dispatcher,
-		newTxs:           clist.New(),
-		candidateTxs:     pqueue.CreatePriorityQueue(),
-		addressToTxGroup: make(map[common.Address]*mempoolTransactionGroup),
-		txBookeepper:     createTransactionBookkeeper(defaultMaxNumTxs),
-		wg:               &sync.WaitGroup{},
-		lastInsertTime:   time.Now(),
+		mutex:                  &sync.Mutex{},
+		consensus:              engine,
+		dispatcher:             dispatcher,
+		newTxs:                 clist.New(),
+		candidateTxs:           pqueue.CreatePriorityQueue(),
+		addressToTxGroup:       make(map[common.Address]*mempoolTransactionGroup),
+		txBookeepper:           createTransactionBookkeeper(defaultMaxNumTxs),
+		wg:                     &sync.WaitGroup{},
+		lastInsertTime:         time.Now(),
+		lastInsertTimeBegining: time.Now(),
 	}
 }
 
@@ -176,6 +178,7 @@ func (mp *Mempool) SetLedger(ledger score.Ledger) {
 
 // InsertTransaction inserts the incoming transaction to mempool (submitted by the clients or relayed from peers)
 func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
+	lastInsertTimeBegin := time.Since(mp.lastInsertTimeBegining)
 	// mp.mutex.Lock()
 	// defer mp.mutex.Unlock()
 	start := time.Now()
@@ -209,7 +212,6 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 		// He then submit txB(seq = 6), and then txA(seq = 7) again. For the second submission, txA
 		// should not be rejected even though it has been submitted earlier.
 		mp.txBookeepper.record(rawTx)
-		// mp.mutex.Lock()
 		txGroup, ok := mp.addressToTxGroup[txInfo.Address]
 		if ok {
 			txGroup.AddTx(rawTx, txInfo)
@@ -218,12 +220,10 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 			txGroup = createMempoolTransactionGroup(rawTx, txInfo)
 			mp.addressToTxGroup[txInfo.Address] = txGroup
 		}
-		// defer mp.mutex.Unlock()
 		mp.candidateTxs.Push(txGroup)
 		logger.Debugf("rawTx: %v, txInfo: %v", hex.EncodeToString(rawTx), txInfo)
-		// logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))
 		mp.size++
-		logger.Infof("Insert Tx, now has %v txs, insert interval is %v, costs %v", mp.size, time.Since(mp.lastInsertTime), time.Since(start))
+		logger.Infof("Insert Tx, now has %v txs, insert interval at start is %v, insert interval at end is %v, costs %v", mp.size, lastInsertTimeBegin, time.Since(mp.lastInsertTime), time.Since(start))
 		mp.lastInsertTime = time.Now()
 		return nil
 	} else {
@@ -392,7 +392,6 @@ func (mp *Mempool) removeTxs(committedRawTxs []common.Bytes) {
 			delete(mp.addressToTxGroup, txGroup.address)
 			elemsTobeRemoved = append(elemsTobeRemoved, txGroup)
 		}
-		logger.Infof("Removed txs, now has:%v", mp.size)
 	}
 
 	// Note after each iteration, the indices of the elems in the priority queue

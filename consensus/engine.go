@@ -606,6 +606,7 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 	}
 
 	start1 = time.Now()
+	stateRootBeforeApplyTxs := block.StateHash
 	result = e.ledger.ApplyBlockTxs(block)
 	if result.IsError() {
 		e.logger.WithFields(log.Fields{
@@ -630,7 +631,8 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 		// block could be re-processed.
 	}
 	applyBlockTime := time.Since(start1)
-
+	stateRootAfterApplyTxs := block.StateHash
+	logger.Infof("before apply state tx is %v, afterward, it is %v", stateRootBeforeApplyTxs, stateRootAfterApplyTxs)
 	start1 = time.Now()
 	go e.pruneState(block.Height)
 	pruneStateTime := time.Since(start1)
