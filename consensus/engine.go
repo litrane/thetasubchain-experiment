@@ -631,7 +631,7 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 		// block could be re-processed.
 	}
 	applyBlockTime := time.Since(start1)
-	stateRootAfterApplyTxs := block.StateHash
+	stateRootAfterApplyTxs := eb.Block.StateHash
 	logger.Infof("before apply state tx is %v, afterward, it is %v", stateRootBeforeApplyTxs, stateRootAfterApplyTxs)
 	start1 = time.Now()
 	go e.pruneState(block.Height)
@@ -645,6 +645,9 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 	}
 
 	e.chain.MarkBlockValid(block.Hash())
+	start1 = time.Now()
+	e.chain.SaveBlock(eb)
+	logger.Infof("Save block time %v", time.Since(start1))
 
 	// Skip voting for block older than current best known epoch.
 	// Allow block with one epoch behind since votes are processed first and might advance epoch
@@ -1185,7 +1188,7 @@ func (e *ConsensusEngine) propose() {
 		}
 		//anoying
 		// e.logger.WithFields(log.Fields{"proposal": proposal}).Info("Making proposal")
-		e.logger.WithFields(log.Fields{"proposal height": proposal.Block.Height, "txes": len(proposal.Block.Txs)}).Info("Making proposal")
+		e.logger.WithFields(log.Fields{"proposal header": proposal.Block.BlockHeader, "txes": len(proposal.Block.Txs)}).Info("Making proposal")
 	}
 
 	payload, err := rlp.EncodeToBytes(proposal)

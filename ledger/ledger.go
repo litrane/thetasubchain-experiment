@@ -502,7 +502,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 	// expectedStateRoot := ledger.currentBlock.StateHash
 
 	view := ledger.state.Delivered()
-	logger.Infof("ApplyBlockTxs: before apply state hash = %v", view.Hash())
+	logger.Infof("ApplyBlockTxsState: before apply state hash = %v, height :%v", view.Hash().Hex(), block.Height)
 	// currHeight := view.Height()
 	// currStateRoot := view.Hash()
 	extParentBlock, err := ledger.chain.FindBlock(block.Parent)
@@ -540,7 +540,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 
 	logger.Debugf("ApplyBlockTxs: Finish applying block transactions, block.height=%v, txProcessTime=%v", block.Height, txProcessTime)
 
-	logger.Infof("ApplyBlockTxs: after apply state hash = %v", view.Hash())
+	logger.Infof("ApplyBlockTxsState: after apply state hash = %v, height :%v", view.Hash().Hex(), block.Height)
 
 	start := time.Now()
 	handleDelayedUpdateTime := time.Since(start)
