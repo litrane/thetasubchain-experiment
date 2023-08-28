@@ -554,7 +554,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 	// 		hex.EncodeToString(newStateRoot[:]),
 	// 		hex.EncodeToString(expectedStateRoot[:]))
 	// }
-
+	ledger.resetState(block)
 	start = time.Now()
 	ledger.state.Commit() // commit to persistent storage
 	commitTime := time.Since(start)

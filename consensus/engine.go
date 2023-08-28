@@ -632,7 +632,7 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 	}
 	applyBlockTime := time.Since(start1)
 	stateRootAfterApplyTxs := eb.Block.StateHash
-	logger.Infof("before apply state tx is %v, afterward, it is %v", stateRootBeforeApplyTxs, stateRootAfterApplyTxs)
+	logger.Infof("before apply state tx is %v, afterward, it is %v", stateRootBeforeApplyTxs.Hex(), stateRootAfterApplyTxs.Hex())
 	start1 = time.Now()
 	go e.pruneState(block.Height)
 	pruneStateTime := time.Since(start1)
@@ -645,9 +645,9 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 	}
 
 	e.chain.MarkBlockValid(block.Hash())
-	start1 = time.Now()
-	e.chain.SaveBlock(eb)
-	logger.Infof("Save block time %v", time.Since(start1))
+	// start1 = time.Now()
+	// e.chain.SaveBlock(eb)
+	// logger.Infof("Save block time %v", time.Since(start1))
 
 	// Skip voting for block older than current best known epoch.
 	// Allow block with one epoch behind since votes are processed first and might advance epoch
