@@ -554,13 +554,13 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 	// 		hex.EncodeToString(newStateRoot[:]),
 	// 		hex.EncodeToString(expectedStateRoot[:]))
 	// }
-	ledger.resetState(block)
+
 	start = time.Now()
 	ledger.state.Commit() // commit to persistent storage
 	commitTime := time.Since(start)
 
 	logger.Debugf("ApplyBlockTxs: Committed state change, block.height = %v", block.Height)
-
+	ledger.resetState(block)
 	// go func() {
 	// 	ledger.mempool.Lock()
 	// 	defer ledger.mempool.Unlock()

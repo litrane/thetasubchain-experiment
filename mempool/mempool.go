@@ -179,6 +179,7 @@ func (mp *Mempool) SetLedger(ledger score.Ledger) {
 // InsertTransaction inserts the incoming transaction to mempool (submitted by the clients or relayed from peers)
 func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 	lastInsertTimeBegin := time.Since(mp.lastInsertTimeBegining)
+	mp.lastInsertTimeBegining = time.Now()
 	// mp.mutex.Lock()
 	// defer mp.mutex.Unlock()
 	start := time.Now()

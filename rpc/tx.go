@@ -201,7 +201,7 @@ func (t *ThetaRPCService) BroadcastRawTransactionAsync(
 	result.TxHash = hash.Hex()
 
 	// logger.Infof("Prepare to broadcast raw transaction (async): %v, hash: %v", hex.EncodeToString(txBytes), hash.Hex())
-	logger.Infof("Prepare to broadcast tx async hash: %v, at :%v", hash.Hex(), time.Now().UnixMicro())
+	logger.Infof("Prepare to broadcast tx async hash: %v, at :%v", hash.Hex(), time.Now().UnixMilli())
 
 	err = t.mempool.InsertTransaction(txBytes)
 	// if err == nil || err == smp.FastsyncSkipTxError {
