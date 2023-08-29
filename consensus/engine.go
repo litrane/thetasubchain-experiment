@@ -554,6 +554,7 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 	start := time.Now()
 
 	block := eb.Block
+	logger.Infof("origin block %v, state root %v, height %v", block.Hash(), block.StateHash, block.Height)
 	if !eb.Status.IsPending() {
 		// Before consensus engine can process the first one, sync layer might send duplicate blocks.
 		e.logger.WithFields(log.Fields{
@@ -643,7 +644,9 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 			e.chain.MarkBlockHasValidatorUpdate(block.Hash())
 		}
 	}
-
+	block = eb.Block
+	logger.Infof("modified block %v, state root %v, height %v", block.Hash(), block.StateHash, block.Height)
+	e.chain.AddBlock(block)
 	e.chain.MarkBlockValid(block.Hash())
 	// start1 = time.Now()
 	// e.chain.SaveBlock(eb)
