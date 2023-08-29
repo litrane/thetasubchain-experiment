@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"time"
 
 	"github.com/thetatoken/theta/common"
 	"github.com/thetatoken/theta/common/result"
@@ -239,11 +238,9 @@ func (h *BlockHeader) Hash() common.Hash {
 	if h == nil {
 		return common.Hash{}
 	}
-	// if h.hash.IsEmpty() {
-	start := time.Now()
-	h.hash = h.calculateHash()
-	fmt.Println("calculate hash costs", time.Since(start))
-	// }
+	if h.hash.IsEmpty() {
+		h.hash = h.calculateHash()
+	}
 	return h.hash
 }
 
