@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -335,7 +336,7 @@ func (oc *Orchestrator) processNextEvent(sourceChainID *big.Int, targetChainID *
 	sourceEvent, err := oc.interChainEventCache.Get(sourceChainID, sourceChainEventType, nextNonce)
 
 	if err == ts.ErrKeyNotFound {
-		//fmt.Println("ErrKeyNotFound")
+		fmt.Println("ErrKeyNotFound", nextNonce)
 		return // the next event (e.g. Token Lock, or Voucher Burn) has not occurred yet
 	}
 
@@ -345,7 +346,7 @@ func (oc *Orchestrator) processNextEvent(sourceChainID *big.Int, targetChainID *
 	targetEventType := oc.getTargetChainCorrespondingEventType(sourceChainEventType)
 	//elapsedTime := time.Since(start)
 	//fmt.Printf("Function1 took %v to run.\n", elapsedTime)
-	//start = time.Now()
+	start := time.Now()
 	//retryThreshold := oc.getRetryThreshold(targetChainID)
 	//if oc.timeElapsedSinceEventProcessed(sourceEvent) > retryThreshold { // retry if the tx has been submitted for a long time
 	//err := oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
@@ -354,8 +355,8 @@ func (oc *Orchestrator) processNextEvent(sourceChainID *big.Int, targetChainID *
 	oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
 	//oc.mutex.Unlock()
 	//oc.mutex.Unlock()
-	//elapsedTime = time.Since(start)
-	//fmt.Printf("Function2 took %v to run.\n", elapsedTime)
+	elapsedTime := time.Since(start)
+	fmt.Printf("Function2 took %v to run.\n", elapsedTime)
 	// 	if err == nil {
 	// 		oc.updateEventProcessedTime(sourceEvent)
 	// 	} else {
@@ -427,9 +428,9 @@ func (oc *Orchestrator) callTargetContract(targetChainID *big.Int, targetEventTy
 		//fmt.Println("oc.lockMap[oc.maxNonce.String()] is", oc.maxNonce.String())
 		//fmt.Println("tx nonce is ", txOpts.Nonce)
 		oc.maxNonce.Add(oc.maxNonce, big.NewInt(1))
-		//fmt.Println("new nonce is", oc.maxNonce.String())
+		fmt.Println("new nonce is", oc.maxNonce.String())
 		//oc.channel <- 1
-		go oc.mintTNT20Vouchers(txOpts, targetChainID, sourceEvent)
+		err = oc.mintTNT20Vouchers(txOpts, targetChainID, sourceEvent)
 	case score.IMCEventTypeCrossChainVoucherMintTNT721:
 
 		err = oc.mintTN721Vouchers(txOpts, targetChainID, sourceEvent)

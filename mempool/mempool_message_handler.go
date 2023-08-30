@@ -3,6 +3,7 @@ package mempool
 import (
 	"encoding/hex"
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 
@@ -68,8 +69,11 @@ func (mmh *MempoolMessageHandler) HandleMessage(message types.Message) error {
 	}
 	rawTx := message.Content.(common.Bytes)
 	logger.Debugf("Received gossiped transaction: %v", hex.EncodeToString(rawTx))
-
+	logger.Infof("insert transaction: %v", hex.EncodeToString(rawTx))
+	startTime := time.Now()
 	err := mmh.mempool.InsertTransaction(rawTx)
+	logger.Infof("insert transaction time: %v", time.Since(startTime))
+	logger.Info("after insert mempool size is ", mmh.mempool.Size())
 	if err == DuplicateTxError {
 		return nil
 	}

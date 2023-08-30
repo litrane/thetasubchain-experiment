@@ -258,7 +258,7 @@ func (mw *MetachainWitness) update() {
 		mw.updateValidatorSetCache(dynasty)
 		mw.witnessedDynasty = dynasty
 	}
-	mw.collectInterChainMessageEventsOnMainchain()
+	//mw.collectInterChainMessageEventsOnMainchain()
 
 	// Subchain
 	mw.collectInterChainMessageEventsOnSubchain()
@@ -295,6 +295,7 @@ func (mw *MetachainWitness) collectInterChainMessageEventsOnChain(queriedChainID
 	// mw.getBlockScanStartingHeight(queriedChainID) // testing code
 
 	fromBlock, err := mw.witnessState.getLastQueryedHeightForType(queriedChainID)
+	fromBlock = common.Big0.Add(fromBlock, common.Big1)
 	if err == store.ErrKeyNotFound {
 		fromBlock = mw.getBlockScanStartingHeight(queriedChainID) // set the proper fromBlock for the code-start scenario, i.e, bootstrapping a new validator
 		mw.witnessState.setLastQueryedHeightForType(queriedChainID, fromBlock)
@@ -302,9 +303,18 @@ func (mw *MetachainWitness) collectInterChainMessageEventsOnChain(queriedChainID
 		logger.Warnf("failed to get the last queryed height %v\n", err)
 	}
 	toBlock := mw.calculateToBlock(fromBlock, queriedChainID)
+	if toBlock.Cmp(fromBlock) == -1 {
+		return
+	}
 	logger.Infof("Query inter-chain message events from block height %v to %v on chain %v", fromBlock.String(), toBlock.String(), queriedChainID.String())
+	startTime := time.Now()
 	events := siu.QueryInterChainEventLog(queriedChainID, fromBlock, toBlock, tfuelTokenBankAddr, tnt20TokenBankAddr, tnt721TokenBankAddr, mw.queryTopics, ethRpcUrl)
+	endTime := time.Since(startTime)
+	logger.Info("query time: ", endTime)
+	startTime = time.Now()
 	err = mw.interChainEventCache.InsertList(events)
+	endTime = time.Since(startTime)
+	logger.Info("insert time: ", endTime)
 	if err != nil { // should not happen
 		logger.Panicf("failed to insert events into cache")
 	}

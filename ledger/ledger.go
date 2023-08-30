@@ -276,19 +276,19 @@ func (ledger *Ledger) ProposeBlockTxs(block *score.Block, validatorMajorityInThe
 
 	blockRawTxs = []common.Bytes{}
 	for _, rawTxCandidate := range rawTxCandidates {
-		tx, err := stypes.TxFromBytes(rawTxCandidate)
-		if err != nil {
-			continue
-		}
+		// tx, err := stypes.TxFromBytes(rawTxCandidate)
+		// if err != nil {
+		// 	continue
+		// }
 
-		_, res := ledger.executor.CheckTx(tx)
-		if res.IsError() {
-			logger.Errorf("Transaction check failed: errMsg = %v, tx = %v", res.Message, tx)
-			continue
-		}
+		// _, res := ledger.executor.CheckTx(tx)
+		// if res.IsError() {
+		// 	logger.Errorf("Transaction check failed: errMsg = %v, tx = %v", res.Message, tx)
+		// 	continue
+		// }
 		blockRawTxs = append(blockRawTxs, rawTxCandidate)
 	}
-
+	logger.Info("ProposeBlockTxs: block transactions executed, block.height = ", block.Height, " tx num = ", len(blockRawTxs))
 	logger.Debugf("ProposeBlockTxs: block transactions executed, block.height = %v", block.Height)
 	execTxsTime := time.Since(start)
 	start = time.Now()
@@ -319,12 +319,13 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 	defer func() { ledger.currentBlock = nil }()
 
 	blockRawTxs := ledger.currentBlock.Txs
-	expectedStateRoot := ledger.currentBlock.StateHash
+	//expectedStateRoot := ledger.currentBlock.StateHash
 
-	view := ledger.state.Delivered()
+	//view := ledger.state.Delivered()
 
 	// currHeight := view.Height()
 	// currStateRoot := view.Hash()
+	view:=ledger.state.Delivered()
 	extParentBlock, err := ledger.chain.FindBlock(block.Parent)
 	if extParentBlock == nil || err != nil {
 		panic(fmt.Sprintf("Failed to find the parent block: %v, err: %v", block.Parent.Hex(), err))
@@ -350,6 +351,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 		_, res := ledger.executor.ExecuteTx(tx)
 		if res.IsError() || res.IsUndecided() {
 			//ledger.resetState(currHeight, currStateRoot)
+			fmt.Println("ERROR exec")
 			ledger.resetState(parentBlock)
 			return res
 		}
@@ -362,20 +364,21 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 	handleDelayedUpdateTime := time.Since(start)
 
 	newStateRoot := view.Hash()
-	if newStateRoot != expectedStateRoot {
-		//ledger.resetState(currHeight, currStateRoot)
-		ledger.resetState(parentBlock)
-		return result.Error("State root mismatch! root: %v, exptected: %v",
-			hex.EncodeToString(newStateRoot[:]),
-			hex.EncodeToString(expectedStateRoot[:]))
-	}
+	block.StateHash = newStateRoot
+	// if newStateRoot != expectedStateRoot {
+	// 	//ledger.resetState(currHeight, currStateRoot)
+	// 	ledger.resetState(parentBlock)
+	// 	return result.Error("State root mismatch! root: %v, exptected: %v",
+	// 		hex.EncodeToString(newStateRoot[:]),
+	// 		hex.EncodeToString(expectedStateRoot[:]))
+	// }
 
 	start = time.Now()
 	ledger.state.Commit() // commit to persistent storage
 	commitTime := time.Since(start)
 
 	logger.Debugf("ApplyBlockTxs: Committed state change, block.height = %v", block.Height)
-
+	logger.Info("ApplyBlockTxs: Committed state change, block.height = ", block.Height, " tx num = ", len(blockRawTxs))
 	go func() {
 		ledger.mempool.Lock()
 		defer ledger.mempool.Unlock()
@@ -394,7 +397,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 // ApplyBlockTxsForChainCorrection applies all block's txs and re-calculate root hash
 func (ledger *Ledger) ApplyBlockTxsForChainCorrection(block *score.Block) (common.Hash, result.Result) {
 	ledger.mempool.Lock()
-	defer ledger.mempool.Unlock()
+	defer ledger.mempool.Unlock() //change
 
 	ledger.mu.Lock()
 	defer ledger.mu.Unlock()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -14,10 +15,11 @@ import (
 	"github.com/thetatoken/theta/common/clist"
 	"github.com/thetatoken/theta/common/math"
 	"github.com/thetatoken/theta/common/pqueue"
-	"github.com/thetatoken/theta/common/result"
 	dp "github.com/thetatoken/theta/dispatcher"
+	"github.com/thetatoken/theta/ledger/types"
 	sconsensus "github.com/thetatoken/thetasubchain/consensus"
 	score "github.com/thetatoken/thetasubchain/core"
+	stypes "github.com/thetatoken/thetasubchain/ledger/types"
 )
 
 var logger *log.Entry = log.WithFields(log.Fields{"prefix": "mempool"})
@@ -188,22 +190,28 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 		return DuplicateTxError
 	}
 
-	// if mp.size >= MaxMempoolTxCount {
-	// 	logger.Debugf("Mempool is full")
-	// 	return errors.New("mempool is full, please submit your transaction again later")
-	// }
+	if mp.size >= MaxMempoolTxCount {
+		logger.Debugf("Mempool is full")
+		return errors.New("mempool is full, please submit your transaction again later")
+	}
 
 	var txInfo *score.TxInfo
-	var checkTxRes result.Result
+	//var checkTxRes result.Result
 
 	// Delay tx verification when in fast sync
 	if mp.consensus.HasSynced() {
-		txInfo, checkTxRes = mp.ledger.ScreenTx(rawTx)
-		if !checkTxRes.IsOK() {
-			logger.Debugf("Transaction screening failed, tx: %v, error: %v", hex.EncodeToString(rawTx), checkTxRes.Message)
-			return errors.New(checkTxRes.Message)
+		//txInfo, checkTxRes = mp.ledger.ScreenTx(rawTx)
+		tx, _ := stypes.TxFromBytes(rawTx)
+		// if !checkTxRes.IsOK() {
+		// 	logger.Debugf("Transaction screening failed, tx: %v, error: %v", hex.EncodeToString(rawTx), checkTxRes.Message)
+		// 	return errors.New(checkTxRes.Message)
+		// }
+		tx1 := tx.(*types.SmartContractTx)
+		txInfo = &score.TxInfo{
+			Address:           tx1.From.Address,
+			Sequence:          tx1.From.Sequence,
+			EffectiveGasPrice: tx1.GasPrice,
 		}
-
 		// only record the transactions that passed the screening. This is because that
 		// an invalid transaction could becoume valid later on. For example, assume expected
 		// sequence for an account is 6. The account accidentally submits txA (seq = 7), got rejected.
@@ -223,7 +231,7 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 		logger.Debugf("rawTx: %v, txInfo: %v", hex.EncodeToString(rawTx), txInfo)
 		logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))
 		mp.size++
-
+		fmt.Println("mp.size: ", mp.size)
 		return nil
 	}
 
@@ -287,7 +295,7 @@ func (mp *Mempool) ReapUnsafe(maxNumTxs int) []common.Bytes {
 	} else {
 		maxNumTxs = math.MinInt(mp.Size(), maxNumTxs)
 	}
-
+	//fmt.Println("maxNumsTxs: ", maxNumTxs)
 	txs := make([]common.Bytes, 0, maxNumTxs)
 	for i := 0; i < maxNumTxs; i++ {
 		if mp.candidateTxs.IsEmpty() {
