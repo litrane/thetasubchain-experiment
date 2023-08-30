@@ -428,8 +428,9 @@ func (oc *Orchestrator) callTargetContract(targetChainID *big.Int, targetEventTy
 		//fmt.Println("oc.lockMap[oc.maxNonce.String()] is", oc.maxNonce.String())
 		//fmt.Println("tx nonce is ", txOpts.Nonce)
 		oc.maxNonce.Add(oc.maxNonce, big.NewInt(1))
-		fmt.Println("new nonce is", oc.maxNonce.String())
+		// fmt.Println("new nonce is", oc.maxNonce.String())
 		//oc.channel <- 1
+		logger.Infof("new nonce %v", oc.maxNonce)
 		err = oc.mintTNT20Vouchers(txOpts, targetChainID, sourceEvent)
 	case score.IMCEventTypeCrossChainVoucherMintTNT721:
 
