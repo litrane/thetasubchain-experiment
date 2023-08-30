@@ -55,11 +55,12 @@ func (c *InterChainEventCache) Insert(event *score.InterChainMessageEvent) error
 func (c *InterChainEventCache) InsertList(events []*score.InterChainMessageEvent) error {
 
 	for _, event := range events {
-		logger.Info("InsertList: ", event.Nonce)
+
 		c.mutex.Lock()
 		c.db[InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce).String()] = event
 		c.mutex.Unlock()
 	}
+	logger.Infof("InsertList from %v to %v", events[0].Nonce, events[len(events)-1].Nonce)
 
 	// store := kvstore.NewKVStore(c.db)
 	// for _, event := range events {
