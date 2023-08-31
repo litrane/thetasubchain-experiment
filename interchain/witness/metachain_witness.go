@@ -311,12 +311,10 @@ func (mw *MetachainWitness) collectInterChainMessageEventsOnChain(queriedChainID
 	events := siu.QueryInterChainEventLog(queriedChainID, fromBlock, toBlock, tfuelTokenBankAddr, tnt20TokenBankAddr, tnt721TokenBankAddr, mw.queryTopics, ethRpcUrl)
 	endTime := time.Since(startTime)
 	logger.Info("query time: ", endTime)
-	if len(events) != 0 {
-		startTime = time.Now()
-		err = mw.interChainEventCache.InsertList(events)
-		endTime = time.Since(startTime)
-		logger.Infof("insert %v costs %v", len(events), endTime)
-	}
+	startTime = time.Now()
+	err = mw.interChainEventCache.InsertList(events)
+	endTime = time.Since(startTime)
+	logger.Infof("insert %v costs %v", len(events), endTime)
 	if err != nil { // should not happen
 		logger.Panicf("failed to insert events into cache")
 	}

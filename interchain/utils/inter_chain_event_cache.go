@@ -53,9 +53,10 @@ func (c *InterChainEventCache) Insert(event *score.InterChainMessageEvent) error
 }
 
 func (c *InterChainEventCache) InsertList(events []*score.InterChainMessageEvent) error {
-
+	if len(events) == 0 {
+		return nil
+	}
 	for _, event := range events {
-
 		c.mutex.Lock()
 		c.db[InterChainEventIndexKey(event.SourceChainID, event.Type, event.Nonce).String()] = event
 		c.mutex.Unlock()
