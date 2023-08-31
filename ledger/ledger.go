@@ -34,9 +34,7 @@ var logger *log.Entry = log.WithFields(log.Fields{"prefix": "ledger"})
 
 var _ score.Ledger = (*Ledger)(nil)
 
-//
 // Ledger implements the score.Ledger interface
-//
 type Ledger struct {
 	db           database.Database
 	chain        *sbc.Chain
@@ -261,7 +259,7 @@ func (ledger *Ledger) ProposeBlockTxs(block *score.Block, validatorMajorityInThe
 
 	// Add special transactions
 	rawTxCandidates := []common.Bytes{}
-	ledger.addSpecialTransactions(block, view, &rawTxCandidates, validatorMajorityInTheSameDynasty)
+	// ledger.addSpecialTransactions(block, view, &rawTxCandidates, validatorMajorityInTheSameDynasty)
 
 	// Add regular transactions submitted by the clients
 	regularRawTxs := ledger.mempool.ReapUnsafe(score.MaxNumRegularTxsPerBlock)
@@ -325,7 +323,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 
 	// currHeight := view.Height()
 	// currStateRoot := view.Hash()
-	view:=ledger.state.Delivered()
+	view := ledger.state.Delivered()
 	extParentBlock, err := ledger.chain.FindBlock(block.Parent)
 	if extParentBlock == nil || err != nil {
 		panic(fmt.Sprintf("Failed to find the parent block: %v, err: %v", block.Parent.Hex(), err))
@@ -569,7 +567,7 @@ func (ledger *Ledger) pruneStateForRange(startHeight, endHeight uint64) error {
 }
 
 // ResetState sets the ledger state with the designated root
-//func (ledger *Ledger) ResetState(height uint64, rootHash common.Hash) result.Result {
+// func (ledger *Ledger) ResetState(height uint64, rootHash common.Hash) result.Result {
 func (ledger *Ledger) ResetState(block *score.Block) result.Result {
 	ledger.mu.Lock()
 	defer ledger.mu.Unlock()
@@ -591,7 +589,7 @@ func (ledger *Ledger) FinalizeState(height uint64, rootHash common.Hash) result.
 }
 
 // resetState sets the ledger state with the designated root
-//func (ledger *Ledger) resetState(height uint64, rootHash common.Hash) result.Result
+// func (ledger *Ledger) resetState(height uint64, rootHash common.Hash) result.Result
 func (ledger *Ledger) resetState(block *score.Block) result.Result {
 	height := block.Height
 	rootHash := block.StateHash

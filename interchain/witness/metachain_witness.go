@@ -308,7 +308,7 @@ func (mw *MetachainWitness) collectInterChainMessageEventsOnChain(queriedChainID
 	}
 	logger.Infof("Query inter-chain message events from block height %v to %v on chain %v", fromBlock.String(), toBlock.String(), queriedChainID.String())
 	startTime := time.Now()
-	events := siu.QueryInterChainEventLog(queriedChainID, fromBlock, toBlock, tfuelTokenBankAddr, tnt20TokenBankAddr, tnt721TokenBankAddr, mw.queryTopics, ethRpcUrl)
+	events := siu.QueryInterChainEventLog(queriedChainID, fromBlock, fromBlock, tfuelTokenBankAddr, tnt20TokenBankAddr, tnt721TokenBankAddr, mw.queryTopics, ethRpcUrl)
 	endTime := time.Since(startTime)
 	logger.Info("query time: ", endTime)
 	startTime = time.Now()
