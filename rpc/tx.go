@@ -201,12 +201,13 @@ func (t *ThetaRPCService) BroadcastRawTransactionAsync(
 	hash := crypto.Keccak256Hash(txBytes)
 	result.TxHash = hash.Hex()
 
-	logger.Infof("Prepare to broadcast raw transaction (async): %v, hash: %v", hex.EncodeToString(txBytes), hash.Hex())
+	// logger.Infof("Prepare to broadcast raw transaction (async): %v, hash: %v", hex.EncodeToString(txBytes), hash.Hex())
 
 	err = t.mempool.InsertTransaction(txBytes)
 	if err == nil || err == smp.FastsyncSkipTxError {
 		t.mempool.BroadcastTx(txBytes) // still broadcast the transactions received locally during the fastsync mode
-		logger.Infof("Broadcasted raw transaction (async): %v, hash: %v", hex.EncodeToString(txBytes), hash.Hex())
+		// logger.Infof("Broadcasted raw transaction (async): %v, hash: %v", hex.EncodeToString(txBytes), hash.Hex())
+		logger.Infof("Broadcasted raw transaction (async) hash: %v", hash.Hex())
 		return nil
 	}
 

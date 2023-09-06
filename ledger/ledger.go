@@ -34,9 +34,7 @@ var logger *log.Entry = log.WithFields(log.Fields{"prefix": "ledger"})
 
 var _ score.Ledger = (*Ledger)(nil)
 
-//
 // Ledger implements the score.Ledger interface
-//
 type Ledger struct {
 	db           database.Database
 	chain        *sbc.Chain
@@ -325,7 +323,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 
 	// currHeight := view.Height()
 	// currStateRoot := view.Hash()
-	view:=ledger.state.Delivered()
+	view := ledger.state.Delivered()
 	extParentBlock, err := ledger.chain.FindBlock(block.Parent)
 	if extParentBlock == nil || err != nil {
 		panic(fmt.Sprintf("Failed to find the parent block: %v, err: %v", block.Parent.Hex(), err))
@@ -358,7 +356,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 		txProcessTime = append(txProcessTime, time.Since(start))
 	}
 
-	logger.Debugf("ApplyBlockTxs: Finish applying block transactions, block.height=%v, txProcessTime=%v", block.Height, txProcessTime)
+	logger.Infof("ApplyBlockTxs: Finish applying block transactions, block.height=%v, txProcessTime=%v, totaltx=%v", block.Height, txProcessTime, len(txProcessTime))
 
 	start := time.Now()
 	handleDelayedUpdateTime := time.Since(start)
@@ -378,7 +376,7 @@ func (ledger *Ledger) ApplyBlockTxs(block *score.Block) result.Result {
 	commitTime := time.Since(start)
 
 	logger.Debugf("ApplyBlockTxs: Committed state change, block.height = %v", block.Height)
-	logger.Info("ApplyBlockTxs: Committed state change, block.height = ", block.Height, " tx num = ", len(blockRawTxs))
+	// logger.Info("ApplyBlockTxs: Committed state change, block.height = ", block.Height, " tx num = ", len(blockRawTxs))
 	go func() {
 		ledger.mempool.Lock()
 		defer ledger.mempool.Unlock()
@@ -569,7 +567,7 @@ func (ledger *Ledger) pruneStateForRange(startHeight, endHeight uint64) error {
 }
 
 // ResetState sets the ledger state with the designated root
-//func (ledger *Ledger) ResetState(height uint64, rootHash common.Hash) result.Result {
+// func (ledger *Ledger) ResetState(height uint64, rootHash common.Hash) result.Result {
 func (ledger *Ledger) ResetState(block *score.Block) result.Result {
 	ledger.mu.Lock()
 	defer ledger.mu.Unlock()
@@ -591,7 +589,7 @@ func (ledger *Ledger) FinalizeState(height uint64, rootHash common.Hash) result.
 }
 
 // resetState sets the ledger state with the designated root
-//func (ledger *Ledger) resetState(height uint64, rootHash common.Hash) result.Result
+// func (ledger *Ledger) resetState(height uint64, rootHash common.Hash) result.Result
 func (ledger *Ledger) resetState(block *score.Block) result.Result {
 	height := block.Height
 	rootHash := block.StateHash

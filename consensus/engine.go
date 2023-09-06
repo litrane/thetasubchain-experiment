@@ -61,6 +61,8 @@ type ConsensusEngine struct {
 	voteTimerReady bool
 	blockProcessed bool
 
+	processMap map[string]bool
+
 	state *State
 }
 
@@ -85,6 +87,8 @@ func NewConsensusEngine(privateKey *crypto.PrivateKey, db store.Store, chain *sb
 
 		voteTimerReady: false,
 		blockProcessed: false,
+
+		processMap: make(map[string]bool),
 
 		metachainWitness: metachainWitness,
 	}
@@ -318,6 +322,12 @@ func (e *ConsensusEngine) processMessage(msg interface{}) (endEpoch bool) {
 		e.checkCC(m.Block)
 		return endEpoch
 	case *score.Block:
+		_, ok := e.processMap[m.BlockHeader.Hash().Hex()]
+		if ok {
+			logger.Infof("I have processed %v", m.BlockHeader.Hash().Hex())
+			return
+		}
+		e.processMap[m.BlockHeader.Hash().Hex()] = true
 		e.logger.WithFields(log.Fields{
 			"block": m.BlockHeader,
 		}).Debug("Received block")
@@ -1174,7 +1184,7 @@ func (e *ConsensusEngine) propose() {
 			e.logger.WithFields(log.Fields{"error": err}).Fatal("Failed to add proposed block to chain")
 		}
 
-		e.logger.WithFields(log.Fields{"proposal": proposal}).Info("Making proposal")
+		e.logger.WithFields(log.Fields{"proposal": proposal.Block.BlockHeader}).Info("Making proposal")
 	}
 
 	payload, err := rlp.EncodeToBytes(proposal)
