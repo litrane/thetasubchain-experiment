@@ -61,6 +61,8 @@ type ConsensusEngine struct {
 	voteTimerReady bool
 	blockProcessed bool
 
+	processMap map[string]bool
+
 	state *State
 }
 
@@ -85,6 +87,8 @@ func NewConsensusEngine(privateKey *crypto.PrivateKey, db store.Store, chain *sb
 
 		voteTimerReady: false,
 		blockProcessed: false,
+
+		processMap: make(map[string]bool),
 
 		metachainWitness: metachainWitness,
 	}
@@ -318,9 +322,16 @@ func (e *ConsensusEngine) processMessage(msg interface{}) (endEpoch bool) {
 		e.checkCC(m.Block)
 		return endEpoch
 	case *score.Block:
+		_, ok := e.processMap[m.BlockHeader.Hash().Hex()]
+		if ok {
+			logger.Infof("I have processed %v", m.BlockHeader.Hash().Hex())
+			return
+		}
+		e.processMap[m.BlockHeader.Hash().Hex()] = true
 		e.logger.WithFields(log.Fields{
 			"block": m.BlockHeader,
 		}).Debug("Received block")
+		// logger.Infof("prcessMessage received block %v at %v", m.BlockHeader.Height, time.Now().UnixMilli())
 		e.handleBlock(m)
 	default:
 		// Should not happen.
@@ -554,7 +565,7 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 	start := time.Now()
 
 	block := eb.Block
-	logger.Infof("origin block %v, state root %v, height %v", block.Hash().Hex(), block.StateHash.Hex(), block.Height)
+	// logger.Infof("origin block %v, height %v, status %v, time %v", block.Hash().Hex(), block.Height, eb.Status, time.Now().UnixMilli())
 	if !eb.Status.IsPending() {
 		// Before consensus engine can process the first one, sync layer might send duplicate blocks.
 		e.logger.WithFields(log.Fields{
@@ -607,7 +618,7 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 	}
 
 	start1 = time.Now()
-	stateRootBeforeApplyTxs := block.StateHash
+	// stateRootBeforeApplyTxs := block.StateHash
 	result = e.ledger.ApplyBlockTxs(block)
 	if result.IsError() {
 		e.logger.WithFields(log.Fields{
@@ -632,8 +643,8 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 		// block could be re-processed.
 	}
 	applyBlockTime := time.Since(start1)
-	stateRootAfterApplyTxs := eb.Block.StateHash
-	logger.Infof("before apply state tx is %v, afterward, it is %v", stateRootBeforeApplyTxs.Hex(), stateRootAfterApplyTxs.Hex())
+	// stateRootAfterApplyTxs := eb.Block.StateHash
+	// logger.Infof("before apply state tx is %v, afterward, it is %v, hash is %v", stateRootBeforeApplyTxs.Hex(), stateRootAfterApplyTxs.Hex(), eb.Block.Hash().Hex())
 	start1 = time.Now()
 	go e.pruneState(block.Height)
 	pruneStateTime := time.Since(start1)
@@ -646,7 +657,7 @@ func (e *ConsensusEngine) handleNormalBlock(eb *score.ExtendedBlock) {
 	}
 	block.UpdateHash()
 	// block = eb.Block
-	logger.Infof("modified block %v, state root %v, height %v", block.Hash().Hex(), block.StateHash.Hex(), block.Height)
+	// logger.Infof("modified block %v, state root %v, height %v, hash is %v", block.Hash().Hex(), block.StateHash.Hex(), eb.Block.Height, eb.Block.Hash().Hex())
 	e.chain.AddBlock(block)
 	e.chain.MarkBlockValid(block.Hash())
 	// start1 = time.Now()
