@@ -17,7 +17,7 @@ import (
 
 const (
 	// MaxNumRegularTxsPerBlock represents the max number of regular transaction can be inclulded in one block
-	MaxNumRegularTxsPerBlock int = 100
+	MaxNumRegularTxsPerBlock int = 256
 )
 
 var (
@@ -314,11 +314,11 @@ Block status transitions:
 +-------+          +-------+                          +-------------------+
 |Pending+---+------>Invalid|                    +----->IndirectlyFinalized|
 +-------+   |      +-------+                    |     +-------------------+
-            |                                   |
-            |      +-----+        +---------+   |     +-----------------+
-            +------>Valid+-------->Committed+---+----->DirectlyFinalized|
-                   +-----+        +---------+         +-----------------+
 
+	|                                   |
+	|      +-----+        +---------+   |     +-----------------+
+	+------>Valid+-------->Committed+---+----->DirectlyFinalized|
+	       +-----+        +---------+         +-----------------+
 */
 const (
 	BlockStatusPending BlockStatus = BlockStatus(iota)

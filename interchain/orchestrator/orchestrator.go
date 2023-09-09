@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -331,38 +330,40 @@ func (oc *Orchestrator) processNextTNT721VoucherBurnEvent(sourceChainID *big.Int
 func (oc *Orchestrator) processNextEvent(sourceChainID *big.Int, targetChainID *big.Int, sourceChainEventType score.InterChainMessageEventType, maxProcessedNonce *big.Int) {
 	//start := time.Now()
 	//oc.cleanUpInterChainEventCache(sourceChainID, sourceChainEventType, maxProcessedNonce)
+	for {
+		nextNonce := big.NewInt(0).Add(maxProcessedNonce, big.NewInt(1))
+		sourceEvent, err := oc.interChainEventCache.Get(sourceChainID, sourceChainEventType, nextNonce)
 
-	nextNonce := big.NewInt(0).Add(maxProcessedNonce, big.NewInt(1))
-	sourceEvent, err := oc.interChainEventCache.Get(sourceChainID, sourceChainEventType, nextNonce)
+		if err == ts.ErrKeyNotFound {
+			// fmt.Println("ErrKeyNotFound", nextNonce)
+			return // the next event (e.g. Token Lock, or Voucher Burn) has not occurred yet
+		}
 
-	if err == ts.ErrKeyNotFound {
-		fmt.Println("ErrKeyNotFound", nextNonce)
-		return // the next event (e.g. Token Lock, or Voucher Burn) has not occurred yet
+		// logger.Debugf("Process next event, sourceChainID: %v, targetChainID: %v, sourceChainEventType: %v, nextNonce: %v",
+		// 	sourceChainID, targetChainID, sourceChainEventType, nextNonce)
+
+		targetEventType := oc.getTargetChainCorrespondingEventType(sourceChainEventType)
+		//elapsedTime := time.Since(start)
+		//fmt.Printf("Function1 took %v to run.\n", elapsedTime)
+		// start := time.Now()
+		//retryThreshold := oc.getRetryThreshold(targetChainID)
+		//if oc.timeElapsedSinceEventProcessed(sourceEvent) > retryThreshold { // retry if the tx has been submitted for a long time
+		//err := oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
+		//oc.mutex.Lock()
+		//oc.mutex.Lock()
+		oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
+		//oc.mutex.Unlock()
+		//oc.mutex.Unlock()
+		// elapsedTime := time.Since(start)
+		// fmt.Printf("Function2 took %v to run.\n", elapsedTime)
+		// 	if err == nil {
+		// 		oc.updateEventProcessedTime(sourceEvent)
+		// 	} else {
+		// 		logger.Warnf("Failed to call target contract: %v", err)
+		// 	}
+		// }
 	}
 
-	// logger.Debugf("Process next event, sourceChainID: %v, targetChainID: %v, sourceChainEventType: %v, nextNonce: %v",
-	// 	sourceChainID, targetChainID, sourceChainEventType, nextNonce)
-
-	targetEventType := oc.getTargetChainCorrespondingEventType(sourceChainEventType)
-	//elapsedTime := time.Since(start)
-	//fmt.Printf("Function1 took %v to run.\n", elapsedTime)
-	start := time.Now()
-	//retryThreshold := oc.getRetryThreshold(targetChainID)
-	//if oc.timeElapsedSinceEventProcessed(sourceEvent) > retryThreshold { // retry if the tx has been submitted for a long time
-	//err := oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
-	//oc.mutex.Lock()
-	//oc.mutex.Lock()
-	oc.callTargetContract(targetChainID, targetEventType, sourceEvent)
-	//oc.mutex.Unlock()
-	//oc.mutex.Unlock()
-	elapsedTime := time.Since(start)
-	fmt.Printf("Function2 took %v to run.\n", elapsedTime)
-	// 	if err == nil {
-	// 		oc.updateEventProcessedTime(sourceEvent)
-	// 	} else {
-	// 		logger.Warnf("Failed to call target contract: %v", err)
-	// 	}
-	// }
 }
 
 func (oc *Orchestrator) cleanUpInterChainEventCache(sourceChainID *big.Int, eventType score.InterChainMessageEventType, maxProcessedNonce *big.Int) {
@@ -428,7 +429,7 @@ func (oc *Orchestrator) callTargetContract(targetChainID *big.Int, targetEventTy
 		//fmt.Println("oc.lockMap[oc.maxNonce.String()] is", oc.maxNonce.String())
 		//fmt.Println("tx nonce is ", txOpts.Nonce)
 		oc.maxNonce.Add(oc.maxNonce, big.NewInt(1))
-		fmt.Println("new nonce is", oc.maxNonce.String())
+		// fmt.Println("new nonce is", oc.maxNonce.String())
 		//oc.channel <- 1
 		err = oc.mintTNT20Vouchers(txOpts, targetChainID, sourceEvent)
 	case score.IMCEventTypeCrossChainVoucherMintTNT721:
@@ -573,7 +574,7 @@ func (oc *Orchestrator) buildTxOpts(chainID *big.Int, ecClient *ec.Client) (*bin
 	// 	gasPrice = common.Big0
 	// }
 	gasPrice = big.NewInt(4000000000000)
-	println("gasPrice", gasPrice.Int64())
+	// println("gasPrice", gasPrice.Int64())
 	//nonce, err := ecClient.PendingNonceAt(context.Background(), oc.privateKey.PublicKey().Address())
 	nonce := oc.nonce
 	oc.nonce++

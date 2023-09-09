@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -35,9 +34,7 @@ const FastsyncSkipTxError = MempoolError("Skip tx during fastsync")
 
 const MaxMempoolTxCount int = 25600
 
-//
 // mempoolTransaction implements the pqueue.Element interface
-//
 type mempoolTransaction struct {
 	index          int
 	rawTransaction common.Bytes
@@ -66,10 +63,8 @@ func createMempoolTransaction(rawTransaction common.Bytes, txInfo *score.TxInfo)
 	}
 }
 
-//
 // mempoolTransactionGroup holds a sequenece of transactions from one account. We sort transaction groups by the priority of
 // their lowest sequence transaction.
-//
 type mempoolTransactionGroup struct {
 	address common.Address
 	txs     *pqueue.PriorityQueue
@@ -135,10 +130,8 @@ func createMempoolTransactionGroup(rawTx common.Bytes, txInfo *score.TxInfo) *me
 	return txGroup
 }
 
-//
 // Mempool manages the transactions submitted by the clients
 // or relayed from peers
-//
 type Mempool struct {
 	mutex *sync.Mutex
 
@@ -231,7 +224,7 @@ func (mp *Mempool) InsertTransaction(rawTx common.Bytes) error {
 		logger.Debugf("rawTx: %v, txInfo: %v", hex.EncodeToString(rawTx), txInfo)
 		logger.Infof("Insert tx, tx.hash: 0x%v", getTransactionHash(rawTx))
 		mp.size++
-		fmt.Println("mp.size: ", mp.size)
+		// fmt.Println("mp.size: ", mp.size)
 		return nil
 	}
 

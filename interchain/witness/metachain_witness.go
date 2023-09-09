@@ -261,7 +261,9 @@ func (mw *MetachainWitness) update() {
 	//mw.collectInterChainMessageEventsOnMainchain()
 
 	// Subchain
+	// logger.Infof("have updated mainchainheight")
 	mw.collectInterChainMessageEventsOnSubchain()
+	// logger.Infof("have collect message")
 	mw.updateSubchainBlockHeight()
 }
 
@@ -311,10 +313,10 @@ func (mw *MetachainWitness) collectInterChainMessageEventsOnChain(queriedChainID
 	events := siu.QueryInterChainEventLog(queriedChainID, fromBlock, toBlock, tfuelTokenBankAddr, tnt20TokenBankAddr, tnt721TokenBankAddr, mw.queryTopics, ethRpcUrl)
 	endTime := time.Since(startTime)
 	logger.Info("query time: ", endTime)
-	startTime = time.Now()
+	// startTime = time.Now()
 	err = mw.interChainEventCache.InsertList(events)
-	endTime = time.Since(startTime)
-	logger.Info("insert time: ", endTime)
+	// endTime = time.Since(startTime)
+	// logger.Info("insert time: ", endTime)
 	if err != nil { // should not happen
 		logger.Panicf("failed to insert events into cache")
 	}
@@ -503,8 +505,8 @@ func (mw *MetachainWitness) calculateToBlock(fromBlock *big.Int, queriedChainID 
 	if err != nil {
 		return fromBlock
 	}
-	maxBlockRange := int64(300) // block range query allows at most 5000 blocks, here we intentionally use a much smaller range to limit cpu/mem resource usage
-	minBlockGap := int64(2)     // tentative, to ensure the chain has enough time to finalize the event
+	maxBlockRange := int64(1) // block range query allows at most 5000 blocks, here we intentionally use a much smaller range to limit cpu/mem resource usage
+	minBlockGap := int64(2)   // tentative, to ensure the chain has enough time to finalize the event
 	if new(big.Int).Sub(toBlock, fromBlock).Cmp(big.NewInt(maxBlockRange)) > 0 {
 		// catch-up phase, gap is over maxBlockRange，catch-up at full speed
 		toBlock = new(big.Int).Add(fromBlock, big.NewInt(maxBlockRange))
