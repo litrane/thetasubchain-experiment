@@ -21,26 +21,7 @@ import (
 	slst "github.com/thetatoken/thetasubchain/ledger/state"
 	stypes "github.com/thetatoken/thetasubchain/ledger/types"
 	smp "github.com/thetatoken/thetasubchain/mempool"
-	sversion "github.com/thetatoken/thetasubchain/version"
 )
-
-// ------------------------------- GetVersion -----------------------------------
-
-type GetVersionArgs struct {
-}
-
-type GetVersionResult struct {
-	Version   string `json:"version"`
-	GitHash   string `json:"git_hash"`
-	Timestamp string `json:"timestamp"`
-}
-
-func (t *ThetaRPCService) GetVersion(args *GetVersionArgs, result *GetVersionResult) (err error) {
-	result.Version = sversion.Version
-	result.GitHash = sversion.GitHash
-	result.Timestamp = sversion.Timestamp
-	return nil
-}
 
 // ------------------------------- GetAccount -----------------------------------
 

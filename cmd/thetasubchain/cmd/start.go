@@ -28,7 +28,6 @@ import (
 	"github.com/thetatoken/thetasubchain/node"
 	"github.com/thetatoken/thetasubchain/snapshot"
 	"github.com/thetatoken/thetasubchain/store/rollingdb"
-	"github.com/thetatoken/thetasubchain/version"
 )
 
 // startCmd represents the start command
@@ -332,7 +331,7 @@ func printWelcomeBanner() {
 	fmt.Println(" ######################################################### ")
 	fmt.Println("")
 	fmt.Println("")
-	fmt.Printf("Version %v, GitHash %s\nBuilt at %s\n", version.Version, version.GitHash, version.Timestamp)
+	// fmt.Printf("Version %v, GitHash %s\nBuilt at %s\n", version.Version, version.GitHash, version.Timestamp)
 	fmt.Println("")
 }
 
